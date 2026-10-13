@@ -1,25 +1,34 @@
+import { useState } from "react";
 import { Navigate } from "react-router-dom";
 
 import { ThemeToggle } from "@/components/theme-toggle";
-import { isAuthenticated } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { getRole, isAuthenticated } from "@/lib/auth";
+import { homePathForRole } from "@/lib/roles";
+import { cn } from "@/lib/utils";
 
 import { LoginForm } from "./login-form";
+import { RegisterForm } from "./register-form";
+
+type AuthMode = "login" | "register";
 
 export default function LoginPage() {
+    const [mode, setMode] = useState<AuthMode>("login");
+
     if (isAuthenticated()) {
-        return <Navigate to="/" replace />;
+        return <Navigate to={homePathForRole(getRole())} replace />;
     }
 
     return (
         <div className="relative flex min-h-svh overflow-hidden bg-background">
-            <main className="relative flex w-full items-center justify-center px-6 py-16 sm:px-8 lg:w-[40%] lg:shrink-0 lg:px-10 xl:w-[38%] xl:px-12">
+            <main className="relative flex w-full items-center justify-center px-6 py-12 sm:px-8 lg:w-[42%] lg:shrink-0 lg:px-10 xl:w-[40%] xl:px-12">
                 <div
                     aria-hidden
                     className="pointer-events-none absolute inset-y-0 right-0 hidden w-px bg-border lg:block"
                 />
 
-                <div className="animate-login-fade-up w-full max-w-[20rem]">
-                    <div className="mb-12 flex flex-col gap-4 lg:hidden">
+                <div className="animate-login-fade-up w-full max-w-[22rem]">
+                    <div className="mb-10 flex flex-col gap-4 lg:hidden">
                         <p className="font-heading text-5xl leading-[0.9] font-bold tracking-[-0.04em] text-foreground">
                             Digital
                             <br />
@@ -30,24 +39,57 @@ export default function LoginPage() {
                         </p>
                     </div>
 
-                    <div className="mb-9 flex items-start justify-between gap-4">
+                    <div className="mb-7 flex items-start justify-between gap-4">
                         <div className="flex flex-col gap-2.5">
                             <p className="text-[11px] font-medium tracking-[0.22em] text-muted-foreground uppercase">
                                 Acesso
                             </p>
                             <h1 className="font-heading text-[2.35rem] leading-none font-bold tracking-[-0.04em] text-foreground">
-                                Bem-vindo
+                                {mode === "login" ? "Bem-vindo" : "Criar conta"}
                             </h1>
                             <p className="text-sm leading-relaxed text-muted-foreground">
-                                Entre com suas credenciais para continuar.
+                                {mode === "login"
+                                    ? "Entre com suas credenciais para continuar."
+                                    : "Complete seus dados para acessar o Digital Paper."}
                             </p>
                         </div>
                         <ThemeToggle />
                     </div>
 
-                    <LoginForm />
+                    <div className="mb-6 flex gap-1 rounded-lg border border-border p-1">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className={cn(
+                                "h-8 flex-1",
+                                mode === "login" &&
+                                    "bg-muted text-foreground hover:bg-muted",
+                            )}
+                            onClick={() => setMode("login")}
+                        >
+                            Entrar
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className={cn(
+                                "h-8 flex-1",
+                                mode === "register" &&
+                                    "bg-muted text-foreground hover:bg-muted",
+                            )}
+                            onClick={() => setMode("register")}
+                        >
+                            Cadastrar
+                        </Button>
+                    </div>
 
-                    <p className="mt-9 text-center text-[10px] tracking-wide text-muted-foreground uppercase">
+                    {mode === "login" ? (
+                        <LoginForm />
+                    ) : (
+                        <RegisterForm onSuccess={() => setMode("login")} />
+                    )}
+
+                    <p className="mt-8 text-center text-[10px] tracking-wide text-muted-foreground uppercase">
                         Acesso restrito a usuários autorizados
                     </p>
                 </div>
@@ -68,7 +110,7 @@ export default function LoginPage() {
                             DP
                         </div>
 
-                        <header className="relative z-10 flex items-center justify-between px-12 pt-8 pb-4 xl:px-14 xl:pt-10">
+                        <header className="relative z-10 flex items-center justify-between pt-8 pr-12 pb-4 pl-16 xl:pt-10 xl:pr-14 xl:pl-20">
                             <div className="flex items-center gap-3">
                                 <span className="size-2 rounded-full bg-foreground" />
                                 <span className="text-xs font-medium tracking-[0.22em] text-muted-foreground uppercase">
@@ -80,7 +122,7 @@ export default function LoginPage() {
                             </span>
                         </header>
 
-                        <div className="relative z-10 flex flex-1 flex-col justify-center gap-8 px-12 py-8 xl:gap-10 xl:px-14">
+                        <div className="relative z-10 flex flex-1 flex-col justify-center gap-8 py-8 pr-12 pl-16 xl:gap-10 xl:pr-14 xl:pl-20">
                             <div>
                                 <p className="font-heading text-[clamp(4rem,8vw,6.5rem)] leading-[0.86] font-bold tracking-[-0.045em] text-foreground">
                                     Digital
@@ -97,13 +139,14 @@ export default function LoginPage() {
                                     Processos com ritmo.
                                 </p>
                                 <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                                    Um espaço limpo para o fluxo de trabalho
-                                    digital do seu time — sem ruído, sem firula.
+                                    Cadastre-se como usuário público, empresa ou
+                                    servidor público e entre no fluxo digital do
+                                    seu time.
                                 </p>
                             </div>
                         </div>
 
-                        <footer className="relative z-10 mt-auto flex items-end justify-between gap-6 border-t border-border/50 px-12 py-6 xl:px-14">
+                        <footer className="relative z-10 mt-auto flex items-end justify-between gap-6 border-t border-border/50 py-6 pr-12 pl-16 xl:pr-14 xl:pl-20">
                             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
                                 Papel digital para times que preferem fluxo
                                 limpo.

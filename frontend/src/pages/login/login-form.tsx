@@ -7,7 +7,8 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { ApiError, login } from "@/lib/api";
-import { setToken } from "@/lib/auth";
+import { getRole, setToken } from "@/lib/auth";
+import { homePathForRole } from "@/lib/roles";
 
 export function LoginForm() {
     const navigate = useNavigate();
@@ -33,7 +34,7 @@ export function LoginForm() {
             const { token } = await login(trimmedLogin, password);
             setToken(token);
             toast.success("Login realizado com sucesso.");
-            navigate("/", { replace: true });
+            navigate(homePathForRole(getRole()), { replace: true });
         } catch (error) {
             if (error instanceof ApiError) {
                 toast.error(error.message);

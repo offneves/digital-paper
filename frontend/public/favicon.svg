@@ -1,13 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
   <style>
-    .icon { stroke: #18181b; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
-    @media (prefers-color-scheme: dark) {
-      .icon { stroke: #fafafa; }
+    .bg { fill: #18181b; }
+    .icon { stroke: #fafafa; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    @media (prefers-color-scheme: light) {
+      .bg { fill: #fafafa; }
+      .icon { stroke: #18181b; }
     }
   </style>
-  <path class="icon" d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
-  <path class="icon" d="M14 2v4a2 2 0 0 0 2 2h4"/>
-  <path class="icon" d="M10 9H8"/>
-  <path class="icon" d="M16 13H8"/>
-  <path class="icon" d="M16 17H8"/>
+  <rect class="bg" width="32" height="32" rx="8"/>
+  <!-- FileText (lucide) inset no tile -->
+  <g transform="translate(4 4)">
+    <path class="icon" d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+    <path class="icon" d="M14 2v4a2 2 0 0 0 2 2h4"/>
+    <path class="icon" d="M10 9H8"/>
+    <path class="icon" d="M16 13H8"/>
+    <path class="icon" d="M16 17H8"/>
+  </g>
 </svg>
