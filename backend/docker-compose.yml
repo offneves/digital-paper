@@ -1,0 +1,22 @@
+services:
+    postgres-auth:
+        image: postgres:16-alpine
+        ports:
+            - "5433:5432"
+        env_file: .env
+        environment:
+            POSTGRES_DB: ${POSTGRES_AUTH_DB}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    rabbitmq:
+        image: rabbitmq:3-management-alpine
+
+    auth-ms:
+        build: ./auth-ms/auth-ms
+        env_file: .env
+        ports:
+            - "8081:8081"
+        depends_on:
+            - postgres-auth
+            - rabbitmq
