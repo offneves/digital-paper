@@ -14,7 +14,6 @@ CREATE TABLE tb_user (
 CREATE TABLE tb_profile (
     id BIGSERIAL PRIMARY KEY,
     profile_name VARCHAR(255) NOT NULL UNIQUE,
-    role VARCHAR(255) NOT NULL,
     active BOOLEAN DEFAULT TRUE
 );
 
@@ -22,7 +21,7 @@ CREATE TABLE tb_user_profile (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     profile_id BIGINT NOT NULL,
-    assigner_id BIGINT NOT NULL,
+    assigner_id BIGINT,
     status VARCHAR(255) NOT NULL,
     assigned_at TIMESTAMP NOT NULL,
 
