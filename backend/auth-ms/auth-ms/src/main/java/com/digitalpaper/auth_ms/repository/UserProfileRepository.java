@@ -7,4 +7,8 @@ import com.digitalpaper.auth_ms.entity.UserProfile;
 
 @Repository
 public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
+
+    boolean existsByProfile_Id(Long profileId);
+    boolean existsByUser_IdAndProfile_Id(Long userId, Long profileId);
+
 }

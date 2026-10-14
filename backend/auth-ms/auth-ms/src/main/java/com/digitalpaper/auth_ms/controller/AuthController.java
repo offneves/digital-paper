@@ -1,6 +1,7 @@
 package com.digitalpaper.auth_ms.controller;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
@@ -15,35 +16,26 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.digitalpaper.auth_ms.config.RabbitMQConfig;
-import com.digitalpaper.auth_ms.dto.LoginRequest;
-import com.digitalpaper.auth_ms.dto.RegisterRequest;
-import com.digitalpaper.auth_ms.dto.TokenResponse;
+import com.digitalpaper.auth_ms.dto.request.LoginRequest;
+import com.digitalpaper.auth_ms.dto.request.RegisterRequest;
+import com.digitalpaper.auth_ms.dto.response.TokenResponse;
+import com.digitalpaper.auth_ms.dto.enums.ErrorCode;
 import com.digitalpaper.auth_ms.dto.event.LoginEvent;
 import com.digitalpaper.auth_ms.entity.User;
+import com.digitalpaper.auth_ms.exception.BusinessException;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    private AuthenticationManager authenticationManager;
-    private TokenService tokenService;
-    private RabbitTemplate rabbitTemplate;
-    private UserService userService;
-
-    public AuthController(
-        AuthenticationManager authenticationManager,
-        TokenService tokenService,
-        RabbitTemplate rabbitTemplate,
-        UserService userService
-
-    ) {
-        this.authenticationManager = authenticationManager;
-        this.tokenService = tokenService;
-        this.rabbitTemplate = rabbitTemplate;
-        this.userService = userService;
-    }
+    private final AuthenticationManager authenticationManager;
+    private final TokenService tokenService;
+    private final RabbitTemplate rabbitTemplate;
+    private final UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest loginRequest) {
@@ -70,20 +62,14 @@ public class AuthController {
                 failedEvent
             );
 
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Wrong login or password.");
+            throw new BusinessException(ErrorCode.AUTH_INVALID_CREDENTIALS);
         }
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest registerRequest) {
-        try {
-            userService.userRegistry(registerRequest);
-            return ResponseEntity.status(HttpStatus.CREATED).body("User registry succesfull.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error to process registry.");
-        }
+        userService.userRegistry(registerRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body("User registry succesfull.");
     }
 
 }

@@ -1,11 +1,8 @@
 package com.digitalpaper.auth_ms.entity;
 
-import com.digitalpaper.auth_ms.entity.enums.UserRole;
 import jakarta.persistence.Id;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
@@ -31,10 +28,6 @@ public class Profile {
 
     @Column(name = "profile_name")
     private String profileName;
-
-    @Column(name = "role")
-    @Enumerated(EnumType.STRING)
-    private UserRole role;
 
     @Column(name = "active")
     private Boolean active;

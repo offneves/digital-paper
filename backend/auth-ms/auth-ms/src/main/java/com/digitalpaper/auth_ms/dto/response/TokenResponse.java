@@ -1,4 +1,5 @@
-package com.digitalpaper.auth_ms.dto;
+package com.digitalpaper.auth_ms.dto.response;
+
 
 public record TokenResponse(
 

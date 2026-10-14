@@ -1,4 +1,4 @@
-package com.digitalpaper.auth_ms.dto;
+package com.digitalpaper.auth_ms.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 
