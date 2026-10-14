@@ -2,13 +2,10 @@ package com.digitalpaper.auth_ms.service.impl;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-
 import javax.crypto.SecretKey;
-
 import org.springframework.stereotype.Service;
-
 import com.digitalpaper.auth_ms.entity.User;
-
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -35,6 +32,18 @@ public class TokenService {
         } catch (Exception e) {
             throw new RuntimeException("Error to generate JWT token's user: " + user);
         }
+    }
+
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(TOKEN_SECRET.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public Claims parseClaims(String token) {
+        return Jwts.parser()
+            .verifyWith(getSigningKey())
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
     }
 
 }
