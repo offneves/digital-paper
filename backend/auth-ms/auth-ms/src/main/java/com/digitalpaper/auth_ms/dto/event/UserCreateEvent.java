@@ -4,7 +4,8 @@ public record UserCreateEvent(
 
     Long id,
     String login,
+    String email,
     String name,
-    String cpf
+    String cpfCnpj
 
 ) {}

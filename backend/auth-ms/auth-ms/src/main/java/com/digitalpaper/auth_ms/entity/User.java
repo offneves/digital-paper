@@ -3,11 +3,9 @@ package com.digitalpaper.auth_ms.entity;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import com.digitalpaper.auth_ms.entity.enums.UserRole;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -45,11 +43,14 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
+    @Column(name = "email")
+    private String email;
+
     @Column(name = "name")
     private String name;
 
-    @Column(name = "cpf")
-    private String cpf;
+    @Column(name = "cpf_cnpj")
+    private String cpfCnpj;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

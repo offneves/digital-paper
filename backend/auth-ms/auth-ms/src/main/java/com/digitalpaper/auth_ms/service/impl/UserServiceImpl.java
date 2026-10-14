@@ -1,12 +1,10 @@
 package com.digitalpaper.auth_ms.service.impl;
 
 import java.time.LocalDateTime;
-
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.digitalpaper.auth_ms.config.RabbitMQConfig;
 import com.digitalpaper.auth_ms.dto.RegisterRequest;
 import com.digitalpaper.auth_ms.dto.event.UserCreateEvent;
@@ -41,8 +39,9 @@ public class UserServiceImpl implements UserService {
         User newUser = new User();
         newUser.setLogin(registerRequest.login());
         newUser.setPassword(passwordEncoder.encode(registerRequest.password()));
+        newUser.setEmail(registerRequest.email());
         newUser.setName(registerRequest.name());
-        newUser.setCpf(registerRequest.cpf());
+        newUser.setCpfCnpj(registerRequest.cpfCnpj());
         newUser.setRole(registerRequest.userRole());
         newUser.setCreatedAt(LocalDateTime.now());
 
@@ -51,8 +50,9 @@ public class UserServiceImpl implements UserService {
         UserCreateEvent event = new UserCreateEvent(
             newUser.getId(),
             newUser.getLogin(),
+            newUser.getEmail(),
             newUser.getName(),
-            newUser.getCpf()
+            newUser.getCpfCnpj()
         );
 
         rabbitTemplate.convertAndSend(
