@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,12 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from "@/components/ui/input-group";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { ApiError, register } from "@/lib/api";
@@ -27,6 +34,7 @@ type RegisterFormProps = {
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
     const [loginName, setLoginName] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [document, setDocument] = useState("");
@@ -289,20 +297,41 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                     >
                         Senha
                     </FieldLabel>
-                    <Input
-                        id="reg-password"
-                        name="password"
-                        type="password"
-                        autoComplete="new-password"
-                        placeholder="••••••••"
-                        className="h-10"
-                        value={password}
-                        disabled={loading}
-                        aria-invalid={
-                            (invalid && !isPasswordValid(password)) || undefined
-                        }
-                        onChange={(event) => setPassword(event.target.value)}
-                    />
+                    <InputGroup className="h-10">
+                        <InputGroupInput
+                            id="reg-password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            placeholder="••••••••"
+                            value={password}
+                            disabled={loading}
+                            aria-invalid={
+                                (invalid && !isPasswordValid(password)) ||
+                                undefined
+                            }
+                            onChange={(event) =>
+                                setPassword(event.target.value)
+                            }
+                        />
+                        <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                                type="button"
+                                size="icon-xs"
+                                aria-label={
+                                    showPassword
+                                        ? "Ocultar senha"
+                                        : "Mostrar senha"
+                                }
+                                aria-pressed={showPassword}
+                                onClick={() =>
+                                    setShowPassword((current) => !current)
+                                }
+                            >
+                                {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                            </InputGroupButton>
+                        </InputGroupAddon>
+                    </InputGroup>
                     <FieldDescription className="sr-only">
                         A senha deve ter no mínimo 8 caracteres, com letra
                         maiúscula, minúscula, número e símbolo.

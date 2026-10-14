@@ -1,10 +1,17 @@
 import { useState, type FormEvent } from "react";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { ApiError, login } from "@/lib/api";
 import { getRole, setToken } from "@/lib/auth";
@@ -14,6 +21,7 @@ export function LoginForm() {
     const navigate = useNavigate();
     const [loginName, setLoginName] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [invalid, setInvalid] = useState(false);
 
@@ -81,18 +89,38 @@ export function LoginForm() {
                     >
                         Senha
                     </FieldLabel>
-                    <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        autoComplete="current-password"
-                        placeholder="••••••••"
-                        className="h-10"
-                        value={password}
-                        disabled={loading}
-                        aria-invalid={invalid || undefined}
-                        onChange={(event) => setPassword(event.target.value)}
-                    />
+                    <InputGroup className="h-10">
+                        <InputGroupInput
+                            id="password"
+                            name="password"
+                            type={showPassword ? "text" : "password"}
+                            autoComplete="current-password"
+                            placeholder="••••••••"
+                            value={password}
+                            disabled={loading}
+                            aria-invalid={invalid || undefined}
+                            onChange={(event) =>
+                                setPassword(event.target.value)
+                            }
+                        />
+                        <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                                type="button"
+                                size="icon-xs"
+                                aria-label={
+                                    showPassword
+                                        ? "Ocultar senha"
+                                        : "Mostrar senha"
+                                }
+                                aria-pressed={showPassword}
+                                onClick={() =>
+                                    setShowPassword((current) => !current)
+                                }
+                            >
+                                {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                            </InputGroupButton>
+                        </InputGroupAddon>
+                    </InputGroup>
                 </Field>
             </FieldGroup>
 

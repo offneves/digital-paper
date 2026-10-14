@@ -1,3 +1,4 @@
+import { LogOutIcon } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -31,6 +32,7 @@ export default function ContaPage() {
                             navigate("/login", { replace: true });
                         }}
                     >
+                        <LogOutIcon data-icon="inline-start" />
                         Sair
                     </Button>
                 </div>

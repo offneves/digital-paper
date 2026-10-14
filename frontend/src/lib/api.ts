@@ -1,3 +1,8 @@
+import { getToken } from "@/lib/auth";
+import {
+    messageForErrorCode,
+    parseApiErrorBody,
+} from "@/lib/error-messages";
 import type { RegisterRole } from "@/lib/roles";
 
 const AUTH_API_URL =
@@ -16,15 +21,33 @@ export type RegisterPayload = {
     userRole: RegisterRole;
 };
 
+export type Profile = {
+    id: number;
+    profileName: string;
+    active: boolean;
+};
+
+export type ProfilePayload = {
+    profileName: string;
+    active?: boolean;
+};
+
 export class ApiError extends Error {
     status: number;
     body: string;
+    code?: string;
 
-    constructor(message: string, status: number, body: string) {
+    constructor(
+        message: string,
+        status: number,
+        body: string,
+        code?: string,
+    ) {
         super(message);
         this.name = "ApiError";
         this.status = status;
         this.body = body;
+        this.code = code;
     }
 }
 
@@ -33,24 +56,39 @@ function userFacingMessage(
     body: string,
     fallback: string,
 ): string {
-    if (status === 401) {
-        return "Login ou senha incorretos.";
+    const apiError = parseApiErrorBody(body);
+    const fromCode = messageForErrorCode(apiError?.code);
+    if (fromCode) {
+        return fromCode;
+    }
+
+    if (status === 401 || status === 403) {
+        // login/register sem body estruturado (legado) ou 403 genérico
+        if (status === 401) {
+            return "Login ou senha incorretos.";
+        }
+        return "Você não tem permissão para esta ação.";
     }
 
     if (status === 0 || status >= 500) {
         return "Não foi possível conectar ao servidor. Tente novamente.";
     }
 
-    if (
-        body &&
-        body.length < 160 &&
-        !body.includes("\n") &&
-        !body.includes("Exception")
-    ) {
-        return body;
-    }
-
     return fallback;
+}
+
+function throwApiError(
+    status: number,
+    body: string,
+    fallback: string,
+): never {
+    const apiError = parseApiErrorBody(body);
+    throw new ApiError(
+        userFacingMessage(status, body, fallback),
+        status,
+        body,
+        apiError?.code,
+    );
 }
 
 async function request(path: string, init: RequestInit): Promise<Response> {
@@ -62,6 +100,50 @@ async function request(path: string, init: RequestInit): Promise<Response> {
             "Não foi possível conectar ao servidor. Tente novamente.",
             0,
             error instanceof Error ? error.message : String(error),
+        );
+    }
+}
+
+async function authRequest(
+    path: string,
+    init: RequestInit = {},
+): Promise<Response> {
+    const token = getToken();
+    const headers = new Headers(init.headers);
+
+    if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    if (init.body && !headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+    }
+
+    return request(path, { ...init, headers });
+}
+
+async function parseJsonBody<T>(
+    response: Response,
+    fallback: string,
+): Promise<T> {
+    const body = await response.text();
+
+    if (!response.ok) {
+        throwApiError(response.status, body, fallback);
+    }
+
+    if (!body) {
+        return undefined as T;
+    }
+
+    try {
+        return JSON.parse(body) as T;
+    } catch (error) {
+        console.error("Invalid JSON response", { body, error });
+        throw new ApiError(
+            "Resposta inválida do servidor.",
+            response.status,
+            body,
         );
     }
 }
@@ -80,15 +162,7 @@ export async function login(
 
     if (!response.ok) {
         console.error("Login failed", { status: response.status, body });
-        throw new ApiError(
-            userFacingMessage(
-                response.status,
-                body,
-                "Não foi possível entrar.",
-            ),
-            response.status,
-            body,
-        );
+        throwApiError(response.status, body, "Não foi possível entrar.");
     }
 
     try {
@@ -116,14 +190,52 @@ export async function register(payload: RegisterPayload): Promise<void> {
 
     if (!response.ok) {
         console.error("Register failed", { status: response.status, body });
-        throw new ApiError(
-            userFacingMessage(
-                response.status,
-                body,
-                "Não foi possível concluir o cadastro.",
-            ),
+        throwApiError(
             response.status,
             body,
+            "Não foi possível concluir o cadastro.",
         );
     }
+}
+
+export async function listProfiles(): Promise<Profile[]> {
+    const response = await authRequest("/admin/profile");
+    return parseJsonBody<Profile[]>(
+        response,
+        "Não foi possível carregar os perfis.",
+    );
+}
+
+export async function createProfile(
+    payload: ProfilePayload,
+): Promise<Profile> {
+    const response = await authRequest("/admin/profile", {
+        method: "POST",
+        body: JSON.stringify({ profileName: payload.profileName }),
+    });
+    return parseJsonBody<Profile>(response, "Não foi possível criar o perfil.");
+}
+
+export async function updateProfile(
+    id: number,
+    payload: ProfilePayload,
+): Promise<Profile> {
+    const response = await authRequest(`/admin/profile/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+            profileName: payload.profileName,
+            active: payload.active ?? true,
+        }),
+    });
+    return parseJsonBody<Profile>(
+        response,
+        "Não foi possível atualizar o perfil.",
+    );
+}
+
+export async function deleteProfile(id: number): Promise<void> {
+    const response = await authRequest(`/admin/profile/${id}`, {
+        method: "DELETE",
+    });
+    await parseJsonBody<void>(response, "Não foi possível remover o perfil.");
 }
