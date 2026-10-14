@@ -1,8 +1,5 @@
 package com.digitalpaper.core.entity;
 
-import org.hibernate.type.SqlTypes;
-import java.util.List;
-import org.hibernate.annotations.JdbcTypeCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,13 +36,5 @@ public class Workflow {
 
     @Column(name = "name")
     private String name;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "next_step")
-    private Workflow nextStep;
-
-    @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column(name = "workflow_action", columnDefinition = "integer[]")
-    private List<Integer> workflowAction;
     
 }
