@@ -13,7 +13,7 @@ services:
         image: rabbitmq:3-management-alpine
 
     auth-ms:
-        build: ./auth-ms/auth-ms
+        build: ./auth-ms
         env_file: .env
         ports:
             - "8081:8081"
