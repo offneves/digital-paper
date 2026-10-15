@@ -23,7 +23,7 @@ const NAV_ITEMS = [
     { label: "Início", icon: LayoutDashboardIcon, to: "/" },
     { label: "Perfis", icon: IdCardIcon, to: "/admin/perfis" },
     { label: "Processos", icon: FileTextIcon, to: null },
-    { label: "Usuários", icon: UsersIcon, to: null },
+    { label: "Usuários", icon: UsersIcon, to: "/admin/usuarios" },
     { label: "Configurações", icon: SettingsIcon, to: null },
 ] as const;
 

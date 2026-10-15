@@ -14,6 +14,11 @@ const ERROR_MESSAGES: Record<string, string> = {
     PROFILE_HAS_LINKED_USERS:
         "Não é possível apagar este perfil porque existem usuários vinculados.",
     PROFILE_USER_EXISTS: "Este usuário já está vinculado a este perfil.",
+    USER_NOT_FOUND: "Usuário não encontrado.",
+    USER_ADMIN_ROLE_FORBIDDEN:
+        "Não é permitido atribuir ou remover o papel de administrador desta forma.",
+    USER_INVALID_DOCUMENT:
+        "O documento não corresponde ao tipo de usuário selecionado.",
     VALIDATION_ERROR: "Verifique os dados informados.",
     INTERNAL_ERROR: "Erro interno. Tente novamente.",
 };

@@ -3,7 +3,7 @@ import {
     messageForErrorCode,
     parseApiErrorBody,
 } from "@/lib/error-messages";
-import type { RegisterRole } from "@/lib/roles";
+import type { RegisterRole, UserRole } from "@/lib/roles";
 
 const AUTH_API_URL =
     import.meta.env.VITE_AUTH_API_URL ?? "http://localhost:8081";
@@ -238,4 +238,77 @@ export async function deleteProfile(id: number): Promise<void> {
         method: "DELETE",
     });
     await parseJsonBody<void>(response, "Não foi possível remover o perfil.");
+}
+
+export type UserProfileSummary = {
+    id: number;
+    profileName: string;
+    status: "ACTIVE" | "SUSPENDED" | "PENDING";
+};
+
+export type AdminUser = {
+    id: number;
+    login: string;
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    role: UserRole;
+    active: boolean;
+    createdAt: string | null;
+    updatedAt: string | null;
+    lastLoginAt: string | null;
+    profiles: UserProfileSummary[];
+};
+
+export type AdminUserUpdatePayload = {
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    role: UserRole;
+    active: boolean;
+};
+
+export type PageResponse<T> = {
+    content: T[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+};
+
+export type ListUsersParams = {
+    q?: string;
+    role?: UserRole | "";
+    page?: number;
+    size?: number;
+};
+
+export async function listUsers(
+    params: ListUsersParams = {},
+): Promise<PageResponse<AdminUser>> {
+    const search = new URLSearchParams();
+    if (params.q?.trim()) search.set("q", params.q.trim());
+    if (params.role) search.set("role", params.role);
+    search.set("page", String(params.page ?? 0));
+    search.set("size", String(params.size ?? 50));
+
+    const response = await authRequest(`/admin/user?${search.toString()}`);
+    return parseJsonBody<PageResponse<AdminUser>>(
+        response,
+        "Não foi possível carregar os usuários.",
+    );
+}
+
+export async function updateUser(
+    id: number,
+    payload: AdminUserUpdatePayload,
+): Promise<AdminUser> {
+    const response = await authRequest(`/admin/user/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+    });
+    return parseJsonBody<AdminUser>(
+        response,
+        "Não foi possível atualizar o usuário.",
+    );
 }

@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import AdminLayout from "@/layouts/admin-layout";
 import AdminProfilesPage from "@/pages/admin/profiles";
+import AdminUsersPage from "@/pages/admin/users";
 import ContaPage from "@/pages/conta";
 import HomePage from "@/pages/home";
 import LoginPage from "@/pages/login";
@@ -20,6 +21,10 @@ export default function App() {
                         <Route
                             path="/admin/perfis"
                             element={<AdminProfilesPage />}
+                        />
+                        <Route
+                            path="/admin/usuarios"
+                            element={<AdminUsersPage />}
                         />
                     </Route>
                     <Route path="*" element={<Navigate to="/login" replace />} />
