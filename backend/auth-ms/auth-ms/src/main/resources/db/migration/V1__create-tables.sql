@@ -6,6 +6,7 @@ CREATE TABLE tb_user (
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     cpf_cnpj VARCHAR(255) NOT NULL,
+    active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP,
     last_login_at TIMESTAMP

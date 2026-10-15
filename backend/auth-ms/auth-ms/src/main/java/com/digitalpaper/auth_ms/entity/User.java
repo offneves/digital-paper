@@ -52,6 +52,9 @@ public class User implements UserDetails {
     @Column(name = "cpf_cnpj")
     private String cpfCnpj;
 
+    @Column(name = "active")
+    private Boolean active;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -82,6 +85,8 @@ public class User implements UserDetails {
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(this.active);
+    }
 
 }

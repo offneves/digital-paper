@@ -1,7 +1,6 @@
 package com.digitalpaper.auth_ms.controller;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
@@ -37,6 +36,7 @@ public class AuthController {
     private final RabbitTemplate rabbitTemplate;
     private final UserService userService;
 
+    
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest loginRequest) {
         try {
@@ -44,6 +44,8 @@ public class AuthController {
             var authentication = authenticationManager.authenticate(authToken);
 
             User loginUser = (User) authentication.getPrincipal();
+            userService.touchLastLogin(loginUser);
+
             String jwt = tokenService.generateToken(loginUser);
 
             LoginEvent successEvent = new LoginEvent(loginUser.getLogin(), "SUCCESS", LocalDateTime.now());

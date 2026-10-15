@@ -17,7 +17,11 @@ public enum ErrorCode {
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "Profile not found."),
     PROFILE_NAME_EXISTS(HttpStatus.CONFLICT, "Profile name already exists."),
     PROFILE_HAS_LINKED_USERS(HttpStatus.CONFLICT, "Profile cannot be deleted because it is linked to users."),
-    PROFILE_USER_EXISTS(HttpStatus.CONFLICT, "User already exists with this role."),
+    PROFILE_USER_EXISTS(HttpStatus.CONFLICT, "User is already linked to this profile."),
+
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not found."),
+    USER_ADMIN_ROLE_FORBIDDEN(HttpStatus.BAD_REQUEST, "Assigning ADMIN role is not allowed."),
+    USER_INVALID_DOCUMENT(HttpStatus.BAD_REQUEST, "Document does not match the selected role."),
 
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected internal error.");
