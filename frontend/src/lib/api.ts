@@ -198,6 +198,45 @@ export async function register(payload: RegisterPayload): Promise<void> {
     }
 }
 
+export async function forgotPassword(email: string): Promise<void> {
+    const response = await request("/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+    });
+
+    const body = await response.text();
+
+    if (!response.ok) {
+        throwApiError(
+            response.status,
+            body,
+            "Não foi possível enviar a recuperação.",
+        );
+    }
+}
+
+export async function resetPassword(
+    token: string,
+    password: string,
+): Promise<void> {
+    const response = await request("/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+    });
+
+    const body = await response.text();
+
+    if (!response.ok) {
+        throwApiError(
+            response.status,
+            body,
+            "Não foi possível redefinir a senha.",
+        );
+    }
+}
+
 export async function listProfiles(): Promise<Profile[]> {
     const response = await authRequest("/admin/profile");
     return parseJsonBody<Profile[]>(

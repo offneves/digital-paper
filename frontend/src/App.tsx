@@ -8,6 +8,8 @@ import AdminUsersPage from "@/pages/admin/users";
 import ContaPage from "@/pages/conta";
 import HomePage from "@/pages/home";
 import LoginPage from "@/pages/login";
+import ForgotPasswordPage from "@/pages/login/forgot-password";
+import ResetPasswordPage from "@/pages/login/reset-password";
 
 export default function App() {
     return (
@@ -15,6 +17,14 @@ export default function App() {
             <BrowserRouter>
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
+                    <Route
+                        path="/recuperar-senha"
+                        element={<ForgotPasswordPage />}
+                    />
+                    <Route
+                        path="/redefinir-senha"
+                        element={<ResetPasswordPage />}
+                    />
                     <Route path="/conta" element={<ContaPage />} />
                     <Route element={<AdminLayout />}>
                         <Route path="/" element={<HomePage />} />

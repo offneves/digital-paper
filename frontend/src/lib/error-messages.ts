@@ -9,6 +9,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     AUTH_LOGIN_ALREADY_IN_USE: "Este login já está em uso.",
     AUTH_REGISTRY_INTERNAL_ERROR:
         "Erro interno ao processar o cadastro. Tente novamente.",
+    AUTH_RESET_TOKEN_INVALID:
+        "Este link de redefinição é inválido ou já expirou. Solicite um novo.",
     PROFILE_NOT_FOUND: "Perfil não encontrado.",
     PROFILE_NAME_EXISTS: "Já existe um perfil com este nome.",
     PROFILE_HAS_LINKED_USERS:

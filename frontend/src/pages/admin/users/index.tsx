@@ -1,9 +1,4 @@
-import {
-    useEffect,
-    useMemo,
-    useState,
-    type FormEvent,
-} from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
     BanIcon,
     ChevronLeftIcon,
@@ -46,7 +41,12 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from "@/components/ui/empty";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+    Field,
+    FieldDescription,
+    FieldGroup,
+    FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -75,19 +75,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    ApiError,
-    listUsers,
-    updateUser,
-    type AdminUser,
-} from "@/lib/api";
+import { ApiError, listUsers, updateUser, type AdminUser } from "@/lib/api";
 import { isValidEmail } from "@/lib/email";
-import {
-    formatCnpj,
-    formatCpf,
-    isCnpjRole,
-    onlyDigits,
-} from "@/lib/masks";
+import { formatCnpj, formatCpf, isCnpjRole, onlyDigits } from "@/lib/masks";
 import {
     EDITABLE_USER_ROLES,
     ROLE_LABELS,
@@ -128,10 +118,7 @@ function usesCnpjForRole(role: UserRole): boolean {
     return isCnpjRole(role);
 }
 
-function roleChangeNeedsConfirm(
-    previous: UserRole,
-    next: UserRole,
-): boolean {
+function roleChangeNeedsConfirm(previous: UserRole, next: UserRole): boolean {
     if (previous === next) return false;
     const defaults = new Set<UserRole>(["COMMON_USER", "ENTERPRISE_USER"]);
     return defaults.has(previous) || defaults.has(next);
@@ -325,7 +312,9 @@ export default function AdminUsersPage() {
                 active,
             });
             setUsers((current) =>
-                current.map((item) => (item.id === updated.id ? updated : item)),
+                current.map((item) =>
+                    item.id === updated.id ? updated : item,
+                ),
             );
             toast.success("Usuário atualizado.");
             setSheetOpen(false);
@@ -365,7 +354,9 @@ export default function AdminUsersPage() {
                 active: nextActive,
             });
             setUsers((current) =>
-                current.map((item) => (item.id === updated.id ? updated : item)),
+                current.map((item) =>
+                    item.id === updated.id ? updated : item,
+                ),
             );
             toast.success(
                 nextActive ? "Usuário desbloqueado." : "Usuário bloqueado.",
@@ -396,7 +387,9 @@ export default function AdminUsersPage() {
                             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 value={query}
-                                onChange={(event) => setQuery(event.target.value)}
+                                onChange={(event) =>
+                                    setQuery(event.target.value)
+                                }
                                 placeholder="Buscar por nome, login ou e-mail…"
                                 className="pl-8"
                                 aria-label="Buscar usuário"
@@ -416,25 +409,31 @@ export default function AdminUsersPage() {
                                 <SelectValue placeholder="Tipo" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="ALL">Todos os tipos</SelectItem>
-                                {(
-                                    Object.keys(ROLE_LABELS) as UserRole[]
-                                ).map((value) => (
-                                    <SelectItem key={value} value={value}>
-                                        {ROLE_LABELS[value]}
-                                    </SelectItem>
-                                ))}
+                                <SelectItem value="ALL">
+                                    Todos os tipos
+                                </SelectItem>
+                                {(Object.keys(ROLE_LABELS) as UserRole[]).map(
+                                    (value) => (
+                                        <SelectItem key={value} value={value}>
+                                            {ROLE_LABELS[value]}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="flex flex-col items-stretch gap-1 sm:items-end">
-                        <Button type="button" disabled title="Disponível após o envio de e-mail">
+                        <Button
+                            type="button"
+                            disabled
+                            title="Disponível após o envio de e-mail"
+                        >
                             <PlusIcon data-icon="inline-start" />
                             Novo usuário
                         </Button>
                         <p className="text-[11px] text-muted-foreground">
-                            Criação por e-mail em breve
+                            Criação em breve
                         </p>
                     </div>
                 </div>
@@ -474,7 +473,9 @@ export default function AdminUsersPage() {
                                             Login
                                         </TableHead>
                                         <TableHead>Tipo</TableHead>
-                                        <TableHead className="w-32">Status</TableHead>
+                                        <TableHead className="w-32">
+                                            Status
+                                        </TableHead>
                                         <TableHead className="hidden lg:table-cell">
                                             Perfis
                                         </TableHead>
@@ -482,7 +483,9 @@ export default function AdminUsersPage() {
                                             Último acesso
                                         </TableHead>
                                         <TableHead className="w-14">
-                                            <span className="sr-only">Ações</span>
+                                            <span className="sr-only">
+                                                Ações
+                                            </span>
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -496,7 +499,8 @@ export default function AdminUsersPage() {
                                             <TableRow
                                                 key={user.id}
                                                 className={cn(
-                                                    !user.active && "opacity-70",
+                                                    !user.active &&
+                                                        "opacity-70",
                                                 )}
                                             >
                                                 <TableCell>
@@ -538,10 +542,11 @@ export default function AdminUsersPage() {
                                                         {pendingApproval ? (
                                                             <Badge variant="outline">
                                                                 <ShieldAlertIcon data-icon="inline-start" />
-                                                                Pendente aprovação
+                                                                Pendente
+                                                                aprovação
                                                             </Badge>
-                                                        ) : user.profiles.length ===
-                                                          0 ? (
+                                                        ) : user.profiles
+                                                              .length === 0 ? (
                                                             <span className="text-xs text-muted-foreground">
                                                                 —
                                                             </span>
@@ -651,7 +656,9 @@ export default function AdminUsersPage() {
                                     value={String(size)}
                                     onValueChange={(value) => {
                                         setSize(
-                                            Number(value) as (typeof PAGE_SIZES)[number],
+                                            Number(
+                                                value,
+                                            ) as (typeof PAGE_SIZES)[number],
                                         );
                                         setPage(0);
                                     }}
@@ -682,7 +689,9 @@ export default function AdminUsersPage() {
                                     variant="outline"
                                     size="icon-sm"
                                     disabled={loading || page <= 0}
-                                    onClick={() => setPage((current) => current - 1)}
+                                    onClick={() =>
+                                        setPage((current) => current - 1)
+                                    }
                                     aria-label="Página anterior"
                                 >
                                     <ChevronLeftIcon />
@@ -701,7 +710,9 @@ export default function AdminUsersPage() {
                                         totalPages === 0 ||
                                         page >= totalPages - 1
                                     }
-                                    onClick={() => setPage((current) => current + 1)}
+                                    onClick={() =>
+                                        setPage((current) => current + 1)
+                                    }
                                     aria-label="Próxima página"
                                 >
                                     <ChevronRightIcon />
@@ -713,10 +724,7 @@ export default function AdminUsersPage() {
             </div>
 
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetContent
-                    side="right"
-                    className="w-full gap-0 sm:max-w-md"
-                >
+                <SheetContent side="right" className="w-full gap-0 sm:max-w-md">
                     <form
                         onSubmit={handleSubmit}
                         className="flex h-full flex-col"
@@ -725,7 +733,8 @@ export default function AdminUsersPage() {
                             <SheetTitle>Editar usuário</SheetTitle>
                             <SheetDescription className="text-pretty">
                                 Login e senha não podem ser alterados aqui. O
-                                vínculo fino de perfis será feito em outro fluxo.
+                                vínculo fino de perfis será feito em outro
+                                fluxo.
                             </SheetDescription>
                         </SheetHeader>
 
@@ -743,7 +752,8 @@ export default function AdminUsersPage() {
                                         className="font-mono text-sm"
                                     />
                                     <FieldDescription>
-                                        Identificador de acesso — somente leitura.
+                                        Identificador de acesso — somente
+                                        leitura.
                                     </FieldDescription>
                                 </Field>
 
@@ -790,7 +800,8 @@ export default function AdminUsersPage() {
                                                 readOnly
                                             />
                                             <FieldDescription>
-                                                Administradores mantêm este tipo.
+                                                Administradores mantêm este
+                                                tipo.
                                             </FieldDescription>
                                         </>
                                     ) : (
@@ -883,8 +894,8 @@ export default function AdminUsersPage() {
                                         <p className="flex items-start gap-2">
                                             <ShieldAlertIcon className="mt-0.5 size-4 shrink-0" />
                                             <span>
-                                                Pendente aprovação — nenhum perfil
-                                                vinculado ainda.
+                                                Pendente aprovação — nenhum
+                                                perfil vinculado ainda.
                                             </span>
                                         </p>
                                     </div>
@@ -940,9 +951,7 @@ export default function AdminUsersPage() {
                             <span className="block">
                                 Você está alterando de{" "}
                                 <span className="font-medium text-foreground">
-                                    {editing
-                                        ? roleLabel(editing.role)
-                                        : ""}
+                                    {editing ? roleLabel(editing.role) : ""}
                                 </span>{" "}
                                 para{" "}
                                 <span className="font-medium text-foreground">

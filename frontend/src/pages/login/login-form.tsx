@@ -17,7 +17,11 @@ import { ApiError, login } from "@/lib/api";
 import { getRole, setToken } from "@/lib/auth";
 import { homePathForRole } from "@/lib/roles";
 
-export function LoginForm() {
+type LoginFormProps = {
+    onForgotPassword: () => void;
+};
+
+export function LoginForm({ onForgotPassword }: LoginFormProps) {
     const navigate = useNavigate();
     const [loginName, setLoginName] = useState("");
     const [password, setPassword] = useState("");
@@ -83,12 +87,21 @@ export function LoginForm() {
                 </Field>
 
                 <Field data-invalid={invalid || undefined}>
-                    <FieldLabel
-                        htmlFor="password"
-                        className="text-[11px] tracking-[0.14em] uppercase"
-                    >
-                        Senha
-                    </FieldLabel>
+                    <div className="flex items-center justify-between gap-3">
+                        <FieldLabel
+                            htmlFor="password"
+                            className="text-[11px] tracking-[0.14em] uppercase"
+                        >
+                            Senha
+                        </FieldLabel>
+                        <button
+                            type="button"
+                            className="cursor-pointer text-[11px] tracking-[0.04em] text-muted-foreground transition-colors hover:text-foreground"
+                            onClick={onForgotPassword}
+                        >
+                            Esqueci a senha
+                        </button>
+                    </div>
                     <InputGroup className="h-10">
                         <InputGroupInput
                             id="password"
