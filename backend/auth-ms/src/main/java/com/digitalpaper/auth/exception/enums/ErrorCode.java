@@ -1,4 +1,4 @@
-package com.digitalpaper.auth.dto.enums;
+package com.digitalpaper.auth.exception.enums;
 
 import org.springframework.http.HttpStatus;
 import lombok.Getter;
@@ -13,6 +13,7 @@ public enum ErrorCode {
     AUTH_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not found."),
     AUTH_LOGIN_ALREADY_IN_USE(HttpStatus.CONFLICT, "This login is already in use."),
     AUTH_REGISTRY_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error to process registry."),
+    AUTH_RESET_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "Password reset token is invalid or expired."),
 
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "Profile not found."),
     PROFILE_NAME_EXISTS(HttpStatus.CONFLICT, "Profile name already exists."),

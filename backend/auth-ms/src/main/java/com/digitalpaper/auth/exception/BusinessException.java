@@ -1,6 +1,6 @@
 package com.digitalpaper.auth.exception;
 
-import com.digitalpaper.auth.dto.enums.ErrorCode;
+import com.digitalpaper.auth.exception.enums.ErrorCode;
 import lombok.Getter;
 
 

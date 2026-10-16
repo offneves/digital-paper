@@ -2,7 +2,7 @@ package com.digitalpaper.auth.service.impl;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
-import com.digitalpaper.auth.dto.enums.ErrorCode;
+import com.digitalpaper.auth.exception.enums.ErrorCode;
 import com.digitalpaper.auth.dto.request.ProfileRequest;
 import com.digitalpaper.auth.dto.response.ProfileResponse;
 import com.digitalpaper.auth.entity.Profile;

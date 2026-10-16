@@ -11,7 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.digitalpaper.auth.config.RabbitMQConfig;
-import com.digitalpaper.auth.dto.enums.ErrorCode;
+import com.digitalpaper.auth.exception.enums.ErrorCode;
 import com.digitalpaper.auth.dto.event.UserCreateEvent;
 import com.digitalpaper.auth.dto.request.AdminUserUpdateRequest;
 import com.digitalpaper.auth.dto.request.RegisterRequest;
