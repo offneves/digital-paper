@@ -41,11 +41,15 @@ import {
     EmptyMedia,
     EmptyTitle,
 } from "@/components/ui/empty";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Field,
     FieldDescription,
     FieldGroup,
     FieldLabel,
+    FieldLegend,
+    FieldSet,
+    FieldTitle,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,7 +79,14 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { ApiError, listUsers, updateUser, type AdminUser } from "@/lib/api";
+import {
+    ApiError,
+    listProfiles,
+    listUsers,
+    updateUser,
+    type AdminUser,
+    type Profile,
+} from "@/lib/api";
 import { isValidEmail } from "@/lib/email";
 import { formatCnpj, formatCpf, isCnpjRole, onlyDigits } from "@/lib/masks";
 import {
@@ -88,7 +99,43 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZES = [5, 10, 25, 50] as const;
 
+const SYSTEM_PROFILE_PUBLIC = "Público";
+const SYSTEM_PROFILE_ENTERPRISE = "Empresa";
+const SYSTEM_PROFILE_ADMIN = "Administrador";
+
+const SYSTEM_PROFILE_NAMES = new Set([
+    SYSTEM_PROFILE_PUBLIC,
+    SYSTEM_PROFILE_ENTERPRISE,
+    SYSTEM_PROFILE_ADMIN,
+]);
+
+const DEFAULT_PROFILE_BY_ROLE: Partial<Record<UserRole, string>> = {
+    COMMON_USER: SYSTEM_PROFILE_PUBLIC,
+    ENTERPRISE_USER: SYSTEM_PROFILE_ENTERPRISE,
+    ADMIN: SYSTEM_PROFILE_ADMIN,
+};
+
 type RoleFilter = UserRole | "ALL";
+
+function isSystemProfileName(name: string): boolean {
+    return SYSTEM_PROFILE_NAMES.has(name);
+}
+
+function isCustomProfile(profile: Profile): boolean {
+    return !isSystemProfileName(profile.profileName);
+}
+
+/** Perfis que o admin pode vincular conforme o tipo do usuário. */
+function isProfileAssignableForRole(
+    profile: Profile,
+    role: UserRole,
+): boolean {
+    if (isSystemProfileName(profile.profileName)) {
+        return DEFAULT_PROFILE_BY_ROLE[role] === profile.profileName;
+    }
+    // Secretarias e demais perfis customizados: só servidor público
+    return role === "PUBLIC_SERVANT";
+}
 
 function formatDateTime(value: string | null): string {
     if (!value) return "—";
@@ -125,25 +172,50 @@ function roleChangeNeedsConfirm(previous: UserRole, next: UserRole): boolean {
 }
 
 function roleChangeMessage(previous: UserRole, next: UserRole): string {
-    if (
-        (previous === "COMMON_USER" && next === "ENTERPRISE_USER") ||
-        (previous === "ENTERPRISE_USER" && next === "COMMON_USER")
-    ) {
-        return `O perfil padrão será trocado de “${previous === "COMMON_USER" ? "Público" : "Empresa"}” para “${next === "COMMON_USER" ? "Público" : "Empresa"}”.`;
+    const previousDefault = DEFAULT_PROFILE_BY_ROLE[previous];
+    const nextDefault = DEFAULT_PROFILE_BY_ROLE[next];
+
+    if (previousDefault && nextDefault && previousDefault !== nextDefault) {
+        return `O perfil de sistema será trocado de “${previousDefault}” para “${nextDefault}”. Perfis de secretaria só se aplicam a servidor público.`;
     }
-    if (
-        (previous === "COMMON_USER" || previous === "ENTERPRISE_USER") &&
-        next === "PUBLIC_SERVANT"
-    ) {
-        return `O perfil padrão “${previous === "COMMON_USER" ? "Público" : "Empresa"}” será removido. Servidores públicos ficam sem perfil até a aprovação.`;
+    if (previousDefault && next === "PUBLIC_SERVANT") {
+        return `O perfil “${previousDefault}” será removido. Selecione os perfis das secretarias abaixo.`;
     }
-    if (
-        previous === "PUBLIC_SERVANT" &&
-        (next === "COMMON_USER" || next === "ENTERPRISE_USER")
-    ) {
-        return `O perfil padrão “${next === "COMMON_USER" ? "Público" : "Empresa"}” será vinculado automaticamente.`;
+    if (previous === "PUBLIC_SERVANT" && nextDefault) {
+        return `Os perfis de secretaria serão removidos e “${nextDefault}” será vinculado automaticamente.`;
     }
-    return "A alteração de tipo pode ajustar os perfis padrão deste usuário.";
+    return "A alteração de tipo ajusta os perfis disponíveis para este usuário.";
+}
+
+function syncSelectedProfilesForRoleChange(
+    previousRole: UserRole,
+    nextRole: UserRole,
+    currentIds: number[],
+    allProfiles: Profile[],
+): number[] {
+    if (previousRole === nextRole) return currentIds;
+
+    const byName = (name: string) =>
+        allProfiles.find((profile) => profile.profileName === name);
+
+    // Mantém só o que ainda é válido para o novo tipo
+    const next = new Set(
+        currentIds.filter((id) => {
+            const profile = allProfiles.find((item) => item.id === id);
+            return profile
+                ? isProfileAssignableForRole(profile, nextRole)
+                : false;
+        }),
+    );
+
+    // Garante o perfil de sistema do novo tipo
+    const nextDefault = DEFAULT_PROFILE_BY_ROLE[nextRole];
+    if (nextDefault) {
+        const profile = byName(nextDefault);
+        if (profile?.active) next.add(profile.id);
+    }
+
+    return [...next];
 }
 
 export default function AdminUsersPage() {
@@ -165,6 +237,9 @@ export default function AdminUsersPage() {
     const [document, setDocument] = useState("");
     const [role, setRole] = useState<UserRole>("COMMON_USER");
     const [active, setActive] = useState(true);
+    const [selectedProfileIds, setSelectedProfileIds] = useState<number[]>([]);
+    const [availableProfiles, setAvailableProfiles] = useState<Profile[]>([]);
+    const [profilesLoading, setProfilesLoading] = useState(false);
     const [nameInvalid, setNameInvalid] = useState(false);
     const [emailInvalid, setEmailInvalid] = useState(false);
     const [documentInvalid, setDocumentInvalid] = useState(false);
@@ -208,6 +283,44 @@ export default function AdminUsersPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when list criteria change
     }, [debouncedQuery, roleFilter, page, size]);
 
+    useEffect(() => {
+        let cancelled = false;
+        async function loadAvailableProfiles() {
+            setProfilesLoading(true);
+            try {
+                const data = await listProfiles();
+                if (cancelled) return;
+                setAvailableProfiles(
+                    [...data].sort((a, b) =>
+                        a.profileName.localeCompare(b.profileName, "pt-BR"),
+                    ),
+                );
+            } catch (error) {
+                if (cancelled) return;
+                if (error instanceof ApiError) {
+                    toast.error(error.message);
+                } else {
+                    toast.error("Não foi possível carregar os perfis.");
+                }
+            } finally {
+                if (!cancelled) setProfilesLoading(false);
+            }
+        }
+        void loadAvailableProfiles();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    // Garante perfil de sistema quando a lista carrega após abrir o sheet
+    useEffect(() => {
+        if (!sheetOpen || availableProfiles.length === 0) return;
+        setSelectedProfileIds((current) =>
+            resolveProfileIdsForRole(role, current),
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only when catalog loads / role in sheet
+    }, [availableProfiles, sheetOpen, role]);
+
     const rangeLabel = useMemo(() => {
         if (totalElements === 0) return "Nenhum usuário";
         const from = page * size + 1;
@@ -215,10 +328,52 @@ export default function AdminUsersPage() {
         return `${from}–${to} de ${totalElements}`;
     }, [page, size, totalElements]);
 
+    const assignableProfiles = useMemo(() => {
+        const linkedIds = new Set(editing?.profiles.map((p) => p.id) ?? []);
+        const selected = new Set(selectedProfileIds);
+        return availableProfiles.filter((profile) => {
+            if (!isProfileAssignableForRole(profile, role)) return false;
+            return (
+                profile.active ||
+                linkedIds.has(profile.id) ||
+                selected.has(profile.id)
+            );
+        });
+    }, [availableProfiles, editing, role, selectedProfileIds]);
+
+    const roleDefaultProfileName = DEFAULT_PROFILE_BY_ROLE[role] ?? null;
+    const customAssignableProfiles = useMemo(
+        () => assignableProfiles.filter(isCustomProfile),
+        [assignableProfiles],
+    );
+    const showsCustomProfiles = role === "PUBLIC_SERVANT";
+    const selectedCount = selectedProfileIds.length;
     const usesCnpj = usesCnpjForRole(role);
     const documentLabel = usesCnpj ? "CNPJ" : "CPF";
     const expectedLength = usesCnpj ? 14 : role === "ADMIN" ? null : 11;
     const isAdminUser = editing?.role === "ADMIN";
+
+    function resolveProfileIdsForRole(
+        roleValue: UserRole,
+        currentIds: number[],
+    ): number[] {
+        const allowed = currentIds.filter((id) => {
+            const profile = availableProfiles.find((item) => item.id === id);
+            return profile
+                ? isProfileAssignableForRole(profile, roleValue)
+                : false;
+        });
+
+        const defaultName = DEFAULT_PROFILE_BY_ROLE[roleValue];
+        if (!defaultName) return allowed;
+
+        const defaultProfile = availableProfiles.find(
+            (profile) => profile.profileName === defaultName,
+        );
+        if (!defaultProfile?.active) return allowed;
+        if (allowed.includes(defaultProfile.id)) return allowed;
+        return [...allowed, defaultProfile.id];
+    }
 
     function openEdit(user: AdminUser) {
         setEditing(user);
@@ -226,6 +381,12 @@ export default function AdminUsersPage() {
         setEmail(user.email);
         setRole(user.role);
         setActive(user.active);
+        setSelectedProfileIds(
+            resolveProfileIdsForRole(
+                user.role,
+                user.profiles.map((profile) => profile.id),
+            ),
+        );
         setDocument(formatDocumentDisplay(user.cpfCnpj, user.role));
         setNameInvalid(false);
         setEmailInvalid(false);
@@ -237,11 +398,34 @@ export default function AdminUsersPage() {
         const nextRole = next as UserRole;
         const wasCnpj = usesCnpjForRole(role);
         const willBeCnpj = usesCnpjForRole(nextRole);
+        setSelectedProfileIds((current) =>
+            syncSelectedProfilesForRoleChange(
+                role,
+                nextRole,
+                current,
+                availableProfiles,
+            ),
+        );
         setRole(nextRole);
         if (wasCnpj !== willBeCnpj) {
             setDocument("");
             setDocumentInvalid(false);
         }
+    }
+
+    function toggleProfile(profileId: number, checked: boolean) {
+        const profile = availableProfiles.find((item) => item.id === profileId);
+        if (!profile || !isCustomProfile(profile)) return;
+        if (!isProfileAssignableForRole(profile, role)) return;
+
+        setSelectedProfileIds((current) => {
+            if (checked) {
+                return current.includes(profileId)
+                    ? current
+                    : [...current, profileId];
+            }
+            return current.filter((id) => id !== profileId);
+        });
     }
 
     function handleDocumentChange(raw: string) {
@@ -310,6 +494,7 @@ export default function AdminUsersPage() {
                 cpfCnpj: onlyDigits(document),
                 role,
                 active,
+                profileIds: resolveProfileIdsForRole(role, selectedProfileIds),
             });
             setUsers((current) =>
                 current.map((item) =>
@@ -377,7 +562,7 @@ export default function AdminUsersPage() {
             <AdminHeader
                 title="Usuários"
                 eyebrow="Administração"
-                description="Consulte, edite e bloqueie contas. A atribuição detalhada de perfis fica em um fluxo separado."
+                description="Consulte, edite contas e vincule perfis de acesso."
             />
 
             <div className="flex flex-1 flex-col gap-6 px-5 py-8 md:px-8">
@@ -529,7 +714,7 @@ export default function AdminUsersPage() {
                                                         variant={
                                                             user.active
                                                                 ? "success"
-                                                                : "secondary"
+                                                                : "destructive"
                                                         }
                                                     >
                                                         {user.active
@@ -724,7 +909,7 @@ export default function AdminUsersPage() {
             </div>
 
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                <SheetContent side="right" className="w-full gap-0 sm:max-w-md">
+                <SheetContent side="right" className="w-full gap-0 sm:max-w-lg">
                     <form
                         onSubmit={handleSubmit}
                         className="flex h-full flex-col"
@@ -732,9 +917,8 @@ export default function AdminUsersPage() {
                         <SheetHeader className="border-b border-border/70">
                             <SheetTitle>Editar usuário</SheetTitle>
                             <SheetDescription className="text-pretty">
-                                Login e senha não podem ser alterados aqui. O
-                                vínculo fino de perfis será feito em outro
-                                fluxo.
+                                Login e senha não podem ser alterados aqui.
+                                Marque os perfis que este usuário deve ter.
                             </SheetDescription>
                         </SheetHeader>
 
@@ -887,37 +1071,168 @@ export default function AdminUsersPage() {
                                     </div>
                                 </Field>
 
-                                {editing &&
-                                editing.role === "PUBLIC_SERVANT" &&
-                                editing.profiles.length === 0 ? (
-                                    <div className="rounded-lg border border-dashed border-border/80 bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
-                                        <p className="flex items-start gap-2">
-                                            <ShieldAlertIcon className="mt-0.5 size-4 shrink-0" />
-                                            <span>
-                                                Pendente aprovação — nenhum
-                                                perfil vinculado ainda.
-                                            </span>
-                                        </p>
-                                    </div>
-                                ) : null}
-
-                                {editing && editing.profiles.length > 0 ? (
-                                    <div className="flex flex-col gap-2">
-                                        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                                            Perfis atuais
-                                        </p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {editing.profiles.map((profile) => (
-                                                <Badge
-                                                    key={profile.id}
-                                                    variant="secondary"
-                                                >
-                                                    {profile.profileName}
-                                                </Badge>
-                                            ))}
+                                <FieldSet>
+                                    <div className="flex items-end justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <FieldLegend variant="label">
+                                                Perfis de acesso
+                                            </FieldLegend>
+                                            <FieldDescription>
+                                                {showsCustomProfiles
+                                                    ? "Selecione as secretarias e setores da prefeitura."
+                                                    : "O perfil de sistema acompanha o tipo de usuário."}
+                                            </FieldDescription>
                                         </div>
+                                        {showsCustomProfiles ? (
+                                            <Badge
+                                                variant="secondary"
+                                                className="shrink-0 tabular-nums"
+                                            >
+                                                {selectedCount === 0
+                                                    ? "Nenhum"
+                                                    : selectedCount === 1
+                                                      ? "1 selecionado"
+                                                      : `${selectedCount} selecionados`}
+                                            </Badge>
+                                        ) : null}
                                     </div>
-                                ) : null}
+
+                                    {roleDefaultProfileName ? (
+                                        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/25 px-3 py-3">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-medium">
+                                                    {roleDefaultProfileName}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Perfil de sistema deste
+                                                    tipo — vinculado
+                                                    automaticamente.
+                                                </p>
+                                            </div>
+                                            <Badge variant="secondary">
+                                                Fixo
+                                            </Badge>
+                                        </div>
+                                    ) : null}
+
+                                    {showsCustomProfiles ? (
+                                        <>
+                                            {selectedCount === 0 ? (
+                                                <div className="rounded-lg border border-dashed border-border/80 bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+                                                    <p className="flex items-start gap-2">
+                                                        <ShieldAlertIcon className="mt-0.5 size-4 shrink-0" />
+                                                        <span>
+                                                            Nenhum perfil
+                                                            selecionado —
+                                                            escolha abaixo os
+                                                            aprovados.
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            ) : null}
+
+                                            <div
+                                                data-slot="checkbox-group"
+                                                className="overflow-hidden rounded-lg border border-border/70"
+                                            >
+                                                {profilesLoading ? (
+                                                    <div className="flex flex-col gap-0 divide-y divide-border/60">
+                                                        {Array.from({
+                                                            length: 4,
+                                                        }).map((_, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className="flex items-center gap-3 px-3 py-3"
+                                                            >
+                                                                <Skeleton className="size-4 rounded-[4px]" />
+                                                                <Skeleton className="h-4 w-40" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : customAssignableProfiles.length ===
+                                                  0 ? (
+                                                    <div className="px-3 py-4 text-sm text-muted-foreground">
+                                                        Nenhum perfil
+                                                        disponível.
+                                                        Crie-os em
+                                                        Administração → Perfis.
+                                                    </div>
+                                                ) : (
+                                                    <div className="max-h-56 divide-y divide-border/60 overflow-y-auto">
+                                                        {customAssignableProfiles.map(
+                                                            (profile) => {
+                                                                const checked =
+                                                                    selectedProfileIds.includes(
+                                                                        profile.id,
+                                                                    );
+                                                                const checkboxId = `user-profile-${profile.id}`;
+                                                                const inactive =
+                                                                    !profile.active;
+                                                                return (
+                                                                    <Field
+                                                                        key={
+                                                                            profile.id
+                                                                        }
+                                                                        orientation="horizontal"
+                                                                        className={cn(
+                                                                            "items-center px-3 py-2.5 transition-colors hover:bg-muted/40",
+                                                                            checked &&
+                                                                                "bg-muted/25",
+                                                                        )}
+                                                                    >
+                                                                        <Checkbox
+                                                                            id={
+                                                                                checkboxId
+                                                                            }
+                                                                            checked={
+                                                                                checked
+                                                                            }
+                                                                            onCheckedChange={(
+                                                                                value,
+                                                                            ) =>
+                                                                                toggleProfile(
+                                                                                    profile.id,
+                                                                                    value ===
+                                                                                        true,
+                                                                                )
+                                                                            }
+                                                                            disabled={
+                                                                                saving
+                                                                            }
+                                                                            aria-label={
+                                                                                profile.profileName
+                                                                            }
+                                                                        />
+                                                                        <FieldLabel
+                                                                            htmlFor={
+                                                                                checkboxId
+                                                                            }
+                                                                            className="flex min-w-0 flex-1 cursor-pointer items-center justify-between gap-2 font-normal"
+                                                                        >
+                                                                            <FieldTitle className="truncate">
+                                                                                {
+                                                                                    profile.profileName
+                                                                                }
+                                                                            </FieldTitle>
+                                                                            {inactive ? (
+                                                                                <Badge
+                                                                                    variant="outline"
+                                                                                    className="shrink-0 text-[10px]"
+                                                                                >
+                                                                                    Inativo
+                                                                                </Badge>
+                                                                            ) : null}
+                                                                        </FieldLabel>
+                                                                    </Field>
+                                                                );
+                                                            },
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </>
+                                    ) : null}
+                                </FieldSet>
                             </FieldGroup>
                         </div>
 

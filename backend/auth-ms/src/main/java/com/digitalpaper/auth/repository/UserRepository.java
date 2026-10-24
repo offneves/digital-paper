@@ -1,5 +1,6 @@
 package com.digitalpaper.auth.repository;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     UserDetails findByLogin(String login);
     Optional<User> findFirstByEmailIgnoreCaseOrderByIdAsc(String email);
+
+    @Query("""
+        SELECT u.id FROM User u
+        WHERE u.role = :role
+          AND u.active = true
+        ORDER BY u.id ASC
+        """)
+    List<Long> findIdsByRoleAndActiveTrue(@Param("role") UserRole role);
 
     @Query("""
         SELECT u FROM User u

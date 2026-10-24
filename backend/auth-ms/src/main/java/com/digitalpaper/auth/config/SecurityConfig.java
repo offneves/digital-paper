@@ -37,6 +37,8 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
             .requestMatchers(HttpMethod.POST, "/auth/forgot-password").permitAll()
             .requestMatchers(HttpMethod.POST, "/auth/reset-password").permitAll()
+            .requestMatchers("/internal/**").permitAll()
+            .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/admin/**").hasRole("ADMIN")
             .anyRequest().authenticated()

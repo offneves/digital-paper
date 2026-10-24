@@ -6,6 +6,7 @@ public record UserCreateEvent(
     String login,
     String email,
     String name,
-    String cpfCnpj
+    String cpfCnpj,
+    String role
 
 ) {}

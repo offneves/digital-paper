@@ -16,6 +16,9 @@ const ERROR_MESSAGES: Record<string, string> = {
     PROFILE_HAS_LINKED_USERS:
         "Não é possível apagar este perfil porque existem usuários vinculados.",
     PROFILE_USER_EXISTS: "Este usuário já está vinculado a este perfil.",
+    PROFILE_INACTIVE: "Não é possível vincular um perfil inativo.",
+    PROFILE_ROLE_MISMATCH:
+        "Este perfil não é permitido para o tipo de usuário selecionado.",
     USER_NOT_FOUND: "Usuário não encontrado.",
     USER_ADMIN_ROLE_FORBIDDEN:
         "Não é permitido atribuir ou remover o papel de administrador desta forma.",

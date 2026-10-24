@@ -8,6 +8,9 @@ import type { RegisterRole, UserRole } from "@/lib/roles";
 const AUTH_API_URL =
     import.meta.env.VITE_AUTH_API_URL ?? "http://localhost:8081";
 
+const NOTIFICATION_API_URL =
+    import.meta.env.VITE_NOTIFICATION_API_URL ?? "http://localhost:8082";
+
 export type TokenResponse = {
     token: string;
 };
@@ -91,9 +94,13 @@ function throwApiError(
     );
 }
 
-async function request(path: string, init: RequestInit): Promise<Response> {
+async function request(
+    baseUrl: string,
+    path: string,
+    init: RequestInit,
+): Promise<Response> {
     try {
-        return await fetch(`${AUTH_API_URL}${path}`, init);
+        return await fetch(`${baseUrl}${path}`, init);
     } catch (error) {
         console.error("Network error", error);
         throw new ApiError(
@@ -104,7 +111,8 @@ async function request(path: string, init: RequestInit): Promise<Response> {
     }
 }
 
-async function authRequest(
+async function authorizedRequest(
+    baseUrl: string,
     path: string,
     init: RequestInit = {},
 ): Promise<Response> {
@@ -119,7 +127,21 @@ async function authRequest(
         headers.set("Content-Type", "application/json");
     }
 
-    return request(path, { ...init, headers });
+    return request(baseUrl, path, { ...init, headers });
+}
+
+async function authRequest(
+    path: string,
+    init: RequestInit = {},
+): Promise<Response> {
+    return authorizedRequest(AUTH_API_URL, path, init);
+}
+
+async function notificationRequest(
+    path: string,
+    init: RequestInit = {},
+): Promise<Response> {
+    return authorizedRequest(NOTIFICATION_API_URL, path, init);
 }
 
 async function parseJsonBody<T>(
@@ -152,7 +174,7 @@ export async function login(
     loginName: string,
     password: string,
 ): Promise<TokenResponse> {
-    const response = await request("/auth/login", {
+    const response = await request(AUTH_API_URL, "/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ login: loginName, password }),
@@ -180,7 +202,7 @@ export async function login(
 }
 
 export async function register(payload: RegisterPayload): Promise<void> {
-    const response = await request("/auth/register", {
+    const response = await request(AUTH_API_URL, "/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -199,7 +221,7 @@ export async function register(payload: RegisterPayload): Promise<void> {
 }
 
 export async function forgotPassword(email: string): Promise<void> {
-    const response = await request("/auth/forgot-password", {
+    const response = await request(AUTH_API_URL, "/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -220,7 +242,7 @@ export async function resetPassword(
     token: string,
     password: string,
 ): Promise<void> {
-    const response = await request("/auth/reset-password", {
+    const response = await request(AUTH_API_URL, "/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),
@@ -305,6 +327,8 @@ export type AdminUserUpdatePayload = {
     cpfCnpj: string;
     role: UserRole;
     active: boolean;
+    /** Quando informado, substitui os vínculos de perfil do usuário. */
+    profileIds?: number[];
 };
 
 export type PageResponse<T> = {
@@ -349,5 +373,122 @@ export async function updateUser(
     return parseJsonBody<AdminUser>(
         response,
         "Não foi possível atualizar o usuário.",
+    );
+}
+
+export type NotificationType =
+    | "USER_REGISTERED"
+    | "PROCESS_UPDATED"
+    | "SYSTEM_UPDATE"
+    | "CITY_ANNOUNCEMENT"
+    | "INTERNAL_ANNOUNCEMENT"
+    | "ENTERPRISE_ANNOUNCEMENT"
+    | "GENERIC";
+
+export type AppNotification = {
+    id: number;
+    recipientUserId: number;
+    announcementId: number | null;
+    type: NotificationType;
+    title: string;
+    body: string;
+    link: string | null;
+    source: string;
+    readAt: string | null;
+    deletedAt: string | null;
+    createdAt: string;
+    read: boolean;
+    deleted: boolean;
+};
+
+export type NotificationListStatus = "all" | "unread" | "read" | "deleted";
+
+export type ListNotificationsParams = {
+    status?: NotificationListStatus;
+    page?: number;
+    size?: number;
+};
+
+export async function listNotifications(
+    params: ListNotificationsParams = {},
+): Promise<PageResponse<AppNotification>> {
+    const search = new URLSearchParams();
+    search.set("status", params.status ?? "all");
+    search.set("page", String(params.page ?? 0));
+    search.set("size", String(params.size ?? 20));
+
+    const response = await notificationRequest(
+        `/notifications?${search.toString()}`,
+    );
+    return parseJsonBody<PageResponse<AppNotification>>(
+        response,
+        "Não foi possível carregar as notificações.",
+    );
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+    const response = await notificationRequest("/notifications/unread-count");
+    const data = await parseJsonBody<{ count: number }>(
+        response,
+        "Não foi possível carregar o contador de notificações.",
+    );
+    return data.count;
+}
+
+export async function markNotificationRead(
+    id: number,
+): Promise<AppNotification> {
+    const response = await notificationRequest(`/notifications/${id}/read`, {
+        method: "PATCH",
+    });
+    return parseJsonBody<AppNotification>(
+        response,
+        "Não foi possível marcar a notificação como lida.",
+    );
+}
+
+export async function markNotificationUnread(
+    id: number,
+): Promise<AppNotification> {
+    const response = await notificationRequest(`/notifications/${id}/unread`, {
+        method: "PATCH",
+    });
+    return parseJsonBody<AppNotification>(
+        response,
+        "Não foi possível marcar a notificação como não lida.",
+    );
+}
+
+export async function markAllNotificationsRead(): Promise<number> {
+    const response = await notificationRequest("/notifications/read-all", {
+        method: "PATCH",
+    });
+    const data = await parseJsonBody<{ updated: number }>(
+        response,
+        "Não foi possível marcar as notificações como lidas.",
+    );
+    return data.updated;
+}
+
+export async function deleteNotification(id: number): Promise<void> {
+    const response = await notificationRequest(`/notifications/${id}`, {
+        method: "DELETE",
+    });
+    await parseJsonBody<void>(
+        response,
+        "Não foi possível excluir a notificação.",
+    );
+}
+
+export async function restoreNotification(
+    id: number,
+): Promise<AppNotification> {
+    const response = await notificationRequest(
+        `/notifications/${id}/restore`,
+        { method: "PATCH" },
+    );
+    return parseJsonBody<AppNotification>(
+        response,
+        "Não foi possível restaurar a notificação.",
     );
 }

@@ -1,5 +1,6 @@
 package com.digitalpaper.auth.dto.request;
 
+import java.util.List;
 import com.digitalpaper.auth.entity.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -27,6 +28,9 @@ public record AdminUserUpdateRequest(
     UserRole role,
 
     @NotNull(message = "Active status is mandatory.")
-    Boolean active
+    Boolean active,
+
+    /** Quando informado, substitui os vínculos de perfil do usuário. */
+    List<Long> profileIds
 
 ) {}

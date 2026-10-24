@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,7 +64,8 @@ public class UserServiceImpl implements UserService {
             newUser.getLogin(),
             newUser.getEmail(),
             newUser.getName(),
-            newUser.getCpfCnpj()
+            newUser.getCpfCnpj(),
+            newUser.getRole().name()
         );
 
         rabbitTemplate.convertAndSend(
@@ -142,9 +145,33 @@ public class UserServiceImpl implements UserService {
         user.setActive(request.active());
         user.setUpdatedAt(LocalDateTime.now());
 
-        userProfileService.syncDefaultProfileOnRoleChange(user, previousRole, nextRole);
+        if (request.profileIds() != null) {
+            userProfileService.replaceProfiles(user, request.profileIds(), resolveCurrentAssigner());
+        } else {
+            userProfileService.syncDefaultProfileOnRoleChange(user, previousRole, nextRole);
+        }
 
         return toResponse(userRepository.save(user));
+    }
+
+    private User resolveCurrentAssigner() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication() != null
+            ? SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+            : null;
+
+        String login = null;
+        if (principal instanceof UserDetails details) {
+            login = details.getUsername();
+        } else if (principal instanceof String value) {
+            login = value;
+        }
+
+        if (login == null || login.isBlank()) {
+            return null;
+        }
+
+        UserDetails found = userRepository.findByLogin(login);
+        return found instanceof User user ? user : null;
     }
 
     private User findUserOrThrow(Long id) {

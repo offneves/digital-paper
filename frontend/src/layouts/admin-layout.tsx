@@ -1,4 +1,5 @@
 import {
+    BellIcon,
     FileTextIcon,
     IdCardIcon,
     LayoutDashboardIcon,
@@ -14,6 +15,7 @@ import {
     useNavigate,
 } from "react-router-dom";
 
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { clearToken, getRole, getUserName, isAuthenticated } from "@/lib/auth";
@@ -21,6 +23,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
     { label: "Início", icon: LayoutDashboardIcon, to: "/" },
+    { label: "Notificações", icon: BellIcon, to: "/notificacoes" },
     { label: "Perfis", icon: IdCardIcon, to: "/admin/perfis" },
     { label: "Processos", icon: FileTextIcon, to: null },
     { label: "Usuários", icon: UsersIcon, to: "/admin/usuarios" },
@@ -59,6 +62,7 @@ export function AdminHeader({
             </div>
             <div className="flex flex-wrap items-center gap-2">
                 {actions}
+                <NotificationBell />
                 <ThemeToggle />
                 <Button
                     type="button"

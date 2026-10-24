@@ -10,6 +10,7 @@ import HomePage from "@/pages/home";
 import LoginPage from "@/pages/login";
 import ForgotPasswordPage from "@/pages/login/forgot-password";
 import ResetPasswordPage from "@/pages/login/reset-password";
+import NotificationsPage from "@/pages/notifications";
 
 export default function App() {
     return (
@@ -28,6 +29,10 @@ export default function App() {
                     <Route path="/conta" element={<ContaPage />} />
                     <Route element={<AdminLayout />}>
                         <Route path="/" element={<HomePage />} />
+                        <Route
+                            path="/notificacoes"
+                            element={<NotificationsPage />}
+                        />
                         <Route
                             path="/admin/perfis"
                             element={<AdminProfilesPage />}

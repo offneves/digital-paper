@@ -8,9 +8,37 @@ services:
             POSTGRES_DB: ${POSTGRES_AUTH_DB}
             POSTGRES_USER: ${POSTGRES_USER}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_AUTH_DB}"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+            start_period: 10s
+
+    postgres-notification:
+        image: postgres:16-alpine
+        ports:
+            - "5434:5432"
+        env_file: .env
+        environment:
+            POSTGRES_DB: ${POSTGRES_NOTIFICATION_DB}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_NOTIFICATION_DB}"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+            start_period: 10s
 
     rabbitmq:
         image: rabbitmq:3-management-alpine
+        healthcheck:
+            test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+            interval: 5s
+            timeout: 5s
+            retries: 12
+            start_period: 20s
 
     auth-ms:
         build: ./auth-ms
@@ -18,5 +46,29 @@ services:
         ports:
             - "8081:8081"
         depends_on:
-            - postgres-auth
-            - rabbitmq
+            postgres-auth:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+            interval: 5s
+            timeout: 3s
+            retries: 18
+            start_period: 50s
+
+    notification-ms:
+        build: ./notification-ms
+        env_file: .env
+        environment:
+            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notification:5432/${POSTGRES_NOTIFICATION_DB}
+            APP_AUTH_BASE_URL: http://auth-ms:8081
+        ports:
+            - "8082:8082"
+        depends_on:
+            postgres-notification:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            auth-ms:
+                condition: service_healthy
