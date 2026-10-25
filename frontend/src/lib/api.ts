@@ -11,6 +11,9 @@ const AUTH_API_URL =
 const NOTIFICATION_API_URL =
     import.meta.env.VITE_NOTIFICATION_API_URL ?? "http://localhost:8082";
 
+const EMAIL_API_URL =
+    import.meta.env.VITE_EMAIL_API_URL ?? "http://localhost:8083";
+
 export type TokenResponse = {
     token: string;
 };
@@ -144,6 +147,13 @@ async function notificationRequest(
     return authorizedRequest(NOTIFICATION_API_URL, path, init);
 }
 
+async function emailRequest(
+    path: string,
+    init: RequestInit = {},
+): Promise<Response> {
+    return authorizedRequest(EMAIL_API_URL, path, init);
+}
+
 async function parseJsonBody<T>(
     response: Response,
     fallback: string,
@@ -259,6 +269,42 @@ export async function resetPassword(
     }
 }
 
+export async function verifyEmail(token: string): Promise<void> {
+    const response = await request(AUTH_API_URL, "/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+    });
+
+    const body = await response.text();
+
+    if (!response.ok) {
+        throwApiError(
+            response.status,
+            body,
+            "Não foi possível confirmar o e-mail.",
+        );
+    }
+}
+
+export async function resendVerification(email: string): Promise<void> {
+    const response = await request(AUTH_API_URL, "/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+    });
+
+    const body = await response.text();
+
+    if (!response.ok) {
+        throwApiError(
+            response.status,
+            body,
+            "Não foi possível reenviar a confirmação.",
+        );
+    }
+}
+
 export async function listProfiles(): Promise<Profile[]> {
     const response = await authRequest("/admin/profile");
     return parseJsonBody<Profile[]>(
@@ -318,6 +364,7 @@ export type AdminUser = {
     createdAt: string | null;
     updatedAt: string | null;
     lastLoginAt: string | null;
+    emailVerifiedAt: string | null;
     profiles: UserProfileSummary[];
 };
 
@@ -490,5 +537,240 @@ export async function restoreNotification(
     return parseJsonBody<AppNotification>(
         response,
         "Não foi possível restaurar a notificação.",
+    );
+}
+
+export type EmailTemplate = {
+    id: number;
+    templateKey: string;
+    name: string;
+    description: string | null;
+    systemTemplate: boolean;
+    enabled: boolean;
+    sensitive: boolean;
+    subject: string;
+    preheader: string | null;
+    eyebrow: string | null;
+    heading: string;
+    body: string;
+    buttonLabel: string | null;
+    buttonUrl: string | null;
+    notice: string | null;
+    footerNote: string | null;
+    variables: string[];
+    sentLast30Days: number;
+    lastSentAt: string | null;
+    createdAt: string;
+    updatedAt: string | null;
+};
+
+export type EmailTemplatePayload = {
+    templateKey?: string;
+    name: string;
+    description: string;
+    sensitive: boolean;
+    subject: string;
+    preheader: string;
+    eyebrow: string;
+    heading: string;
+    body: string;
+    buttonLabel: string;
+    buttonUrl: string;
+    notice: string;
+    footerNote: string;
+};
+
+export type EmailTemplatePreview = {
+    subject: string | null;
+    html: string;
+    variables: string[];
+    sampleValues: Record<string, string>;
+};
+
+export type EmailStatus = "PENDING" | "SENT" | "RETRYING" | "FAILED" | "SKIPPED";
+
+export type EmailLog = {
+    id: number;
+    templateKey: string;
+    sensitive: boolean;
+    status: EmailStatus;
+    source: string;
+    recipientUserId: number | null;
+    recipientEmail: string;
+    recipientName: string | null;
+    subject: string;
+    attempts: number;
+    maxAttempts: number;
+    lastError: string | null;
+    nextAttemptAt: string | null;
+    sentAt: string | null;
+    createdAt: string;
+    updatedAt: string | null;
+};
+
+export type EmailAttempt = {
+    attemptNumber: number;
+    success: boolean;
+    error: string | null;
+    durationMs: number;
+    attemptedAt: string;
+};
+
+export type EmailLogDetail = {
+    email: EmailLog;
+    body: string | null;
+    attempts: EmailAttempt[];
+};
+
+export type ListEmailsParams = {
+    q?: string;
+    status?: EmailStatus | "";
+    template?: string;
+    page?: number;
+    size?: number;
+};
+
+export async function listEmailTemplates(): Promise<EmailTemplate[]> {
+    const response = await emailRequest("/admin/email/template");
+    return parseJsonBody<EmailTemplate[]>(
+        response,
+        "Não foi possível carregar os templates.",
+    );
+}
+
+export async function getEmailTemplate(id: number): Promise<EmailTemplate> {
+    const response = await emailRequest(`/admin/email/template/${id}`);
+    return parseJsonBody<EmailTemplate>(
+        response,
+        "Não foi possível carregar o template.",
+    );
+}
+
+export async function createEmailTemplate(
+    payload: EmailTemplatePayload,
+): Promise<EmailTemplate> {
+    const response = await emailRequest("/admin/email/template", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+    return parseJsonBody<EmailTemplate>(
+        response,
+        "Não foi possível criar o template.",
+    );
+}
+
+export async function updateEmailTemplate(
+    id: number,
+    payload: EmailTemplatePayload,
+): Promise<EmailTemplate> {
+    const response = await emailRequest(`/admin/email/template/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+    });
+    return parseJsonBody<EmailTemplate>(
+        response,
+        "Não foi possível salvar o template.",
+    );
+}
+
+export async function setEmailTemplateEnabled(
+    id: number,
+    enabled: boolean,
+): Promise<EmailTemplate> {
+    const response = await emailRequest(
+        `/admin/email/template/${id}/enabled`,
+        { method: "PATCH", body: JSON.stringify({ enabled }) },
+    );
+    return parseJsonBody<EmailTemplate>(
+        response,
+        "Não foi possível alterar o status do template.",
+    );
+}
+
+export async function restoreEmailTemplate(
+    id: number,
+): Promise<EmailTemplate> {
+    const response = await emailRequest(
+        `/admin/email/template/${id}/restore-default`,
+        { method: "POST" },
+    );
+    return parseJsonBody<EmailTemplate>(
+        response,
+        "Não foi possível restaurar o template.",
+    );
+}
+
+export async function deleteEmailTemplate(id: number): Promise<void> {
+    const response = await emailRequest(`/admin/email/template/${id}`, {
+        method: "DELETE",
+    });
+    await parseJsonBody<void>(
+        response,
+        "Não foi possível apagar o template.",
+    );
+}
+
+export async function previewEmailTemplate(params: {
+    templateId?: number;
+    template?: EmailTemplatePayload;
+    variables?: Record<string, string>;
+}): Promise<EmailTemplatePreview> {
+    const response = await emailRequest("/admin/email/template/preview", {
+        method: "POST",
+        body: JSON.stringify(params),
+    });
+    return parseJsonBody<EmailTemplatePreview>(
+        response,
+        "Não foi possível gerar a prévia.",
+    );
+}
+
+export async function sendEmailTemplateTest(
+    id: number,
+    to: string,
+    variables: Record<string, string>,
+): Promise<EmailLog> {
+    const response = await emailRequest(`/admin/email/template/${id}/test`, {
+        method: "POST",
+        body: JSON.stringify({ to, variables }),
+    });
+    return parseJsonBody<EmailLog>(
+        response,
+        "Não foi possível enviar o teste.",
+    );
+}
+
+export async function listEmails(
+    params: ListEmailsParams = {},
+): Promise<PageResponse<EmailLog>> {
+    const search = new URLSearchParams();
+    if (params.q?.trim()) search.set("q", params.q.trim());
+    if (params.status) search.set("status", params.status);
+    if (params.template) search.set("template", params.template);
+    search.set("page", String(params.page ?? 0));
+    search.set("size", String(params.size ?? 25));
+
+    const response = await emailRequest(`/admin/email?${search.toString()}`);
+    return parseJsonBody<PageResponse<EmailLog>>(
+        response,
+        "Não foi possível carregar o histórico de e-mails.",
+    );
+}
+
+export async function getEmail(id: number): Promise<EmailLogDetail> {
+    const response = await emailRequest(`/admin/email/${id}`);
+    return parseJsonBody<EmailLogDetail>(
+        response,
+        "Não foi possível carregar o e-mail.",
+    );
+}
+
+export async function resendEmail(id: number): Promise<EmailLogDetail> {
+    const response = await emailRequest(`/admin/email/${id}/resend`, {
+        method: "POST",
+    });
+    return parseJsonBody<EmailLogDetail>(
+        response,
+        "Não foi possível reenviar o e-mail.",
     );
 }

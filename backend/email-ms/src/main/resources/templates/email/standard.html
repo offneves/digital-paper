@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{email/layout/base :: layout(
+          eyebrow=${eyebrow},
+          heading=${heading},
+          preheader=${preheader},
+          content=~{::section}
+      )}">
+<body>
+<section th:remove="tag">
+
+    <th:block th:each="paragraph : ${paragraphs}">
+        <th:block th:replace="~{email/layout/components :: paragraph(${paragraph})}"></th:block>
+    </th:block>
+
+    <th:block th:if="${buttonUrl != null and buttonLabel != null}">
+        <th:block th:replace="~{email/layout/components :: button(${buttonUrl}, ${buttonLabel})}"></th:block>
+    </th:block>
+
+    <th:block th:if="${notice != null}">
+        <th:block th:replace="~{email/layout/components :: notice(${notice})}"></th:block>
+    </th:block>
+
+    <th:block th:if="${buttonUrl != null and buttonLabel != null}">
+        <th:block th:replace="~{email/layout/components :: linkFallback(${buttonUrl})}"></th:block>
+    </th:block>
+
+    <th:block th:if="${footerNote != null}">
+        <th:block th:replace="~{email/layout/components :: muted(${footerNote})}"></th:block>
+    </th:block>
+
+</section>
+</body>
+</html>

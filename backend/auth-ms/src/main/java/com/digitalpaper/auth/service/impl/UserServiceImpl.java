@@ -25,6 +25,7 @@ import com.digitalpaper.auth.entity.UserProfile;
 import com.digitalpaper.auth.entity.enums.UserRole;
 import com.digitalpaper.auth.exception.BusinessException;
 import com.digitalpaper.auth.repository.UserRepository;
+import com.digitalpaper.auth.service.EmailVerificationService;
 import com.digitalpaper.auth.service.UserProfileService;
 import com.digitalpaper.auth.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class UserServiceImpl implements UserService {
     private final UserProfileService userProfileService;
     private final PasswordEncoder passwordEncoder;
     private final RabbitTemplate rabbitTemplate;
+    private final EmailVerificationService emailVerificationService;
 
     @Override
     @Transactional
@@ -73,6 +75,8 @@ public class UserServiceImpl implements UserService {
             RabbitMQConfig.ROUTING_KEY_CREATED,
             event
         );
+
+        emailVerificationService.sendVerification(newUser);
     }
 
     @Override
@@ -215,6 +219,7 @@ public class UserServiceImpl implements UserService {
             .createdAt(user.getCreatedAt())
             .updatedAt(user.getUpdatedAt())
             .lastLoginAt(user.getLastLoginAt())
+            .emailVerifiedAt(user.getEmailVerifiedAt())
             .profiles(profiles)
             .build();
     }

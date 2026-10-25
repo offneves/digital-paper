@@ -1,0 +1,4 @@
+# Variáveis de ambiente: versionar só os exemplos
+.env
+.env.*
+!.env.example

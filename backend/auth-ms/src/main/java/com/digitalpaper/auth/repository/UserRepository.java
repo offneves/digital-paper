@@ -18,6 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     UserDetails findByLogin(String login);
     Optional<User> findFirstByEmailIgnoreCaseOrderByIdAsc(String email);
+    List<User> findByEmailIgnoreCaseAndEmailVerifiedAtIsNullAndActiveTrue(String email);
 
     @Query("""
         SELECT u.id FROM User u

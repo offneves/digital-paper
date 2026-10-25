@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<p th:fragment="paragraph(text)" class="dp-fg" style="margin:0 0 16px; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; line-height:1.65; color:#09090b;" th:utext="${text}">Texto</p>
+
+<p th:fragment="muted(text)" class="dp-muted" style="margin:0 0 16px; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.6; color:#71717a;" th:utext="${text}">Texto</p>
+
+<table th:fragment="button(url, label)" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;">
+    <tr>
+        <td class="dp-btn" align="center" bgcolor="#18181b" style="border-radius:8px; background-color:#18181b;">
+            <a th:href="${url}" data-action class="dp-btn-text" target="_blank" style="display:block; padding:13px 20px; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; font-weight:500; letter-spacing:0.3px; line-height:1; color:#fafafa; text-decoration:none; border-radius:8px;" th:text="${label}">Ação</a>
+        </td>
+    </tr>
+</table>
+
+<table th:fragment="notice(text)" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+    <tr>
+        <td class="dp-notice dp-muted" style="padding:14px 16px; background-color:#f4f4f5; border:1px solid #e4e4e7; border-radius:10px; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.55; color:#52525b;" th:utext="${text}">
+            Aviso
+        </td>
+    </tr>
+</table>
+
+<div th:fragment="linkFallback(url)" class="dp-divider" style="border-top:1px solid #e4e4e7; padding-top:20px; margin-top:4px;">
+    <p class="dp-muted" style="margin:0 0 8px; font-family:'DM Sans','Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.5; color:#71717a;">
+        Se o botão não funcionar, copie e cole este endereço no navegador:
+    </p>
+    <p style="margin:0 0 20px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; line-height:1.5; word-break:break-all;">
+        <a th:href="${url}" th:text="${url}" class="dp-fg" target="_blank" style="color:#09090b; text-decoration:underline;">https://</a>
+    </p>
+</div>
+
+</body>
+</html>

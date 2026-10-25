@@ -1,18 +1,16 @@
 package com.digitalpaper.auth.service.impl;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.HexFormat;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.digitalpaper.auth.config.RabbitMQConfig;
+import com.digitalpaper.auth.dto.event.PasswordResetRequestedEvent;
 import com.digitalpaper.auth.exception.enums.ErrorCode;
 import com.digitalpaper.auth.dto.request.ForgotPasswordRequest;
 import com.digitalpaper.auth.dto.request.ResetPasswordRequest;
@@ -30,11 +28,12 @@ import lombok.RequiredArgsConstructor;
 public class PasswordResetServiceImpl implements PasswordResetService {
 
     private static final Logger log = LoggerFactory.getLogger(PasswordResetServiceImpl.class);
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OpaqueTokenService opaqueTokenService;
+    private final AuthEventPublisher eventPublisher;
 
     @Value("${app.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl;
@@ -55,11 +54,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             Instant now = Instant.now();
             passwordResetTokenRepository.invalidateActiveTokensForUser(user.getId(), now);
 
-            String rawToken = generateRawToken();
+            String rawToken = opaqueTokenService.generate();
 
             PasswordResetToken resetToken = PasswordResetToken.builder()
                 .user(user)
-                .tokenHash(hashToken(rawToken))
+                .tokenHash(opaqueTokenService.hash(rawToken))
                 .expiresAt(now.plus(expirationMinutes, ChronoUnit.MINUTES))
                 .createdAt(now)
                 .build();
@@ -70,19 +69,27 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 + "/redefinir-senha?token="
                 + rawToken;
 
-            log.info(
-                "Password reset link for user {} ({}): {}",
-                user.getLogin(),
-                user.getEmail(),
-                resetUrl
+            eventPublisher.publishAfterCommit(
+                RabbitMQConfig.ROUTING_KEY_PASSWORD_RESET,
+                new PasswordResetRequestedEvent(
+                    UUID.randomUUID().toString(),
+                    user.getId(),
+                    user.getLogin(),
+                    user.getName(),
+                    user.getEmail(),
+                    resetUrl,
+                    expirationMinutes
+                )
             );
+
+            log.info("Password reset requested for user {} (id={})", user.getLogin(), user.getId());
         });
     }
 
     @Override
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        String tokenHash = hashToken(request.token().trim());
+        String tokenHash = opaqueTokenService.hash(request.token().trim());
 
         PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
             .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_RESET_TOKEN_INVALID));
@@ -96,26 +103,13 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         User user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setUpdatedAt(java.time.LocalDateTime.now());
+        if (user.getEmailVerifiedAt() == null) {
+            user.setEmailVerifiedAt(java.time.LocalDateTime.now());
+        }
         userRepository.save(user);
 
         resetToken.setUsedAt(now);
         passwordResetTokenRepository.invalidateActiveTokensForUser(user.getId(), now);
-    }
-
-    private String generateRawToken() {
-        byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-        return HexFormat.of().formatHex(bytes);
-    }
-
-    private String hashToken(String rawToken) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashed = digest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hashed);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 not available", e);
-        }
     }
 
 }

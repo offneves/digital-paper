@@ -127,7 +127,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 cpfCnpj: documentDigits,
                 userRole,
             });
-            toast.success("Cadastro realizado. Faça login para continuar.");
+            toast.success("Cadastro realizado. Confirme seu e-mail para entrar.", {
+                description: `Enviamos um link de confirmação para ${trimmedEmail}.`,
+                duration: 8000,
+            });
             onSuccess();
         } catch (error) {
             if (error instanceof ApiError) {

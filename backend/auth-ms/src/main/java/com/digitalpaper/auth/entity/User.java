@@ -64,6 +64,9 @@ public class User implements UserDetails {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

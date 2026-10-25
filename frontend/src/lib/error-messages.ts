@@ -11,6 +11,10 @@ const ERROR_MESSAGES: Record<string, string> = {
         "Erro interno ao processar o cadastro. Tente novamente.",
     AUTH_RESET_TOKEN_INVALID:
         "Este link de redefinição é inválido ou já expirou. Solicite um novo.",
+    AUTH_EMAIL_NOT_VERIFIED:
+        "Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.",
+    AUTH_VERIFICATION_TOKEN_INVALID:
+        "Este link de confirmação é inválido, já foi usado ou expirou. Peça um novo abaixo.",
     PROFILE_NOT_FOUND: "Perfil não encontrado.",
     PROFILE_NAME_EXISTS: "Já existe um perfil com este nome.",
     PROFILE_HAS_LINKED_USERS:
@@ -24,6 +28,19 @@ const ERROR_MESSAGES: Record<string, string> = {
         "Não é permitido atribuir ou remover o papel de administrador desta forma.",
     USER_INVALID_DOCUMENT:
         "O documento não corresponde ao tipo de usuário selecionado.",
+    EMAIL_NOT_FOUND: "E-mail não encontrado no histórico.",
+    EMAIL_ALREADY_SENT: "Este e-mail já foi enviado.",
+    EMAIL_CONTENT_UNAVAILABLE:
+        "O conteúdo deste e-mail não está mais disponível para reenvio.",
+    TEMPLATE_NOT_FOUND: "Template não encontrado.",
+    TEMPLATE_KEY_INVALID:
+        "A chave deve ter apenas letras minúsculas, números e hífens.",
+    TEMPLATE_KEY_EXISTS: "Já existe um template com esta chave.",
+    TEMPLATE_SYSTEM_PROTECTED:
+        "Templates do sistema não podem ser apagados. Desative-o se necessário.",
+    TEMPLATE_NO_DEFAULT: "Só templates do sistema têm um padrão para restaurar.",
+    TEMPLATE_BUTTON_INVALID:
+        "O botão precisa de um texto e de um link http(s) ou de uma variável, como {{actionUrl}}.",
     VALIDATION_ERROR: "Verifique os dados informados.",
     INTERNAL_ERROR: "Erro interno. Tente novamente.",
 };

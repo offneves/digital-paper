@@ -68,10 +68,6 @@ export function ForgotPasswordForm({ onBackToLogin }: ForgotPasswordFormProps) {
                             , você receberá um link para criar uma nova senha.
                             O link expira em 1 hora.
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                            Em desenvolvimento, o link também aparece nos logs
-                            do auth-ms.
-                        </p>
                     </div>
                 </div>
 

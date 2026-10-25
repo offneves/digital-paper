@@ -19,6 +19,7 @@ public record AdminUserResponse(
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime lastLoginAt,
+    LocalDateTime emailVerifiedAt,
     List<UserProfileSummaryResponse> profiles
 
 ) {}

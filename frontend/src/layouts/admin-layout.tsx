@@ -4,6 +4,7 @@ import {
     IdCardIcon,
     LayoutDashboardIcon,
     LogOutIcon,
+    MailIcon,
     SettingsIcon,
     UsersIcon,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
     { label: "Perfis", icon: IdCardIcon, to: "/admin/perfis" },
     { label: "Processos", icon: FileTextIcon, to: null },
     { label: "Usuários", icon: UsersIcon, to: "/admin/usuarios" },
+    { label: "E-mails", icon: MailIcon, to: "/admin/email" },
     { label: "Configurações", icon: SettingsIcon, to: null },
 ] as const;
 

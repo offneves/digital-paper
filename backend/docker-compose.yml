@@ -1,3 +1,5 @@
+# Inicialização em sequência (cada serviço espera o anterior ficar healthy):
+# postgres-auth → postgres-notification → postgres-email → rabbitmq → auth-ms → notification-ms → email-ms
 services:
     postgres-auth:
         image: postgres:16-alpine
@@ -24,6 +26,9 @@ services:
             POSTGRES_DB: ${POSTGRES_NOTIFICATION_DB}
             POSTGRES_USER: ${POSTGRES_USER}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        depends_on:
+            postgres-auth:
+                condition: service_healthy
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_NOTIFICATION_DB}"]
             interval: 5s
@@ -31,8 +36,30 @@ services:
             retries: 10
             start_period: 10s
 
+    postgres-email:
+        image: postgres:16-alpine
+        ports:
+            - "5435:5432"
+        env_file: .env
+        environment:
+            POSTGRES_DB: ${POSTGRES_EMAIL_DB}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        depends_on:
+            postgres-notification:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_EMAIL_DB}"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+            start_period: 10s
+
     rabbitmq:
         image: rabbitmq:3-management-alpine
+        depends_on:
+            postgres-email:
+                condition: service_healthy
         healthcheck:
             test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
             interval: 5s
@@ -72,3 +99,30 @@ services:
                 condition: service_healthy
             auth-ms:
                 condition: service_healthy
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+            interval: 5s
+            timeout: 3s
+            retries: 18
+            start_period: 50s
+
+    email-ms:
+        build: ./email-ms
+        env_file: .env
+        environment:
+            SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-email:5432/${POSTGRES_EMAIL_DB}
+        ports:
+            - "8083:8083"
+        depends_on:
+            postgres-email:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            notification-ms:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+            interval: 5s
+            timeout: 3s
+            retries: 18
+            start_period: 50s

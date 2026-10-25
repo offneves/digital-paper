@@ -48,7 +48,14 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
             toast.success("Login realizado com sucesso.");
             navigate(homePathForRole(getRole()), { replace: true });
         } catch (error) {
-            if (error instanceof ApiError) {
+            if (error instanceof ApiError && error.code === "AUTH_EMAIL_NOT_VERIFIED") {
+                toast.error(error.message, {
+                    action: {
+                        label: "Reenviar link",
+                        onClick: () => navigate("/confirmar-email"),
+                    },
+                });
+            } else if (error instanceof ApiError) {
                 toast.error(error.message);
             } else {
                 console.error(error);

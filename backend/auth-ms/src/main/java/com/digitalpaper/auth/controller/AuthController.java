@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
+import com.digitalpaper.auth.service.EmailVerificationService;
 import com.digitalpaper.auth.service.PasswordResetService;
 import com.digitalpaper.auth.service.UserService;
 import com.digitalpaper.auth.service.impl.TokenService;
@@ -18,7 +19,9 @@ import com.digitalpaper.auth.config.RabbitMQConfig;
 import com.digitalpaper.auth.dto.request.ForgotPasswordRequest;
 import com.digitalpaper.auth.dto.request.LoginRequest;
 import com.digitalpaper.auth.dto.request.RegisterRequest;
+import com.digitalpaper.auth.dto.request.ResendVerificationRequest;
 import com.digitalpaper.auth.dto.request.ResetPasswordRequest;
+import com.digitalpaper.auth.dto.request.VerifyEmailRequest;
 import com.digitalpaper.auth.dto.response.TokenResponse;
 import com.digitalpaper.auth.exception.enums.ErrorCode;
 import com.digitalpaper.auth.dto.event.LoginEvent;
@@ -38,6 +41,7 @@ public class AuthController {
     private final RabbitTemplate rabbitTemplate;
     private final UserService userService;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
 
 
     @PostMapping("/login")
@@ -47,6 +51,11 @@ public class AuthController {
             var authentication = authenticationManager.authenticate(authToken);
 
             User loginUser = (User) authentication.getPrincipal();
+
+            if (loginUser.getEmailVerifiedAt() == null) {
+                throw new BusinessException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
+            }
+
             userService.touchLastLogin(loginUser);
 
             String jwt = tokenService.generateToken(loginUser);
@@ -87,6 +96,18 @@ public class AuthController {
     public ResponseEntity<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
         passwordResetService.resetPassword(request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(@RequestBody @Valid VerifyEmailRequest request) {
+        emailVerificationService.verify(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(@RequestBody @Valid ResendVerificationRequest request) {
+        emailVerificationService.resend(request);
+        return ResponseEntity.accepted().build();
     }
 
 }

@@ -3,6 +3,7 @@ package com.digitalpaper.auth.service.impl;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.digitalpaper.auth.entity.User;
 import io.jsonwebtoken.Claims;
@@ -13,7 +14,8 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class TokenService {
 
-    private final String TOKEN_SECRET = "K7mPq2Xv9LdR4sTf8NyWa1BcHu6ZjQeN";
+    @Value("${app.jwt.secret:K7mPq2Xv9LdR4sTf8NyWa1BcHu6ZjQeN}")
+    private String TOKEN_SECRET;
     private final Long EXPIRATION_TIME = 7200000L;
 
     public String generateToken(User user) {

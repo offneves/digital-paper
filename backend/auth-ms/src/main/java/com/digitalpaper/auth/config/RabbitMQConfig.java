@@ -24,6 +24,9 @@ public class RabbitMQConfig {
     public static final String ROUTING_KEY_CREATED = "user.created";
     public static final String ROUTING_KEY_ALL_EVENTS = "user.login.#";
 
+    public static final String ROUTING_KEY_EMAIL_VERIFICATION = "user.email-verification.requested";
+    public static final String ROUTING_KEY_PASSWORD_RESET = "user.password-reset.requested";
+
     @Bean
     public TopicExchange authExchange() {
         return new TopicExchange(EXCHANGE_NAME);
